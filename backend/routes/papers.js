@@ -463,7 +463,7 @@ router.post('/:paperId/comment', async (req, res) => {
   }
 });
 
-// Check download permissions
+// Check download permission
 router.get('/:paperId/download-permission', async (req, res) => {
   try {
     const { paperId } = req.params;
@@ -505,6 +505,110 @@ router.get('/:paperId/download-permission', async (req, res) => {
       canDownload,
       reason,
       paperTitle: file.metadata.title
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Admin paper management routes
+
+// Delete paper (admin only)
+router.delete('/admin/papers/:paperId', async (req, res) => {
+  try {
+    const { paperId } = req.params;
+
+    // Find the file first to check if it exists
+    const files = await gfs.find({ _id: new mongoose.Types.ObjectId(paperId) }).toArray();
+    
+    if (!files || files.length === 0) {
+      return res.status(404).json({ message: 'Paper not found' });
+    }
+
+    // Delete the file from GridFS
+    await gfs.delete(new mongoose.Types.ObjectId(paperId));
+
+    res.json({ message: 'Paper deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Update paper status/metadata (admin only)
+router.put('/admin/papers/:paperId', async (req, res) => {
+  try {
+    const { paperId } = req.params;
+    const { title, description, journal, year, publisher, authors, tags, sdgs, doi } = req.body;
+
+    // Find the file
+    const files = await gfs.find({ _id: new mongoose.Types.ObjectId(paperId) }).toArray();
+    
+    if (!files || files.length === 0) {
+      return res.status(404).json({ message: 'Paper not found' });
+    }
+
+    const file = files[0];
+
+    // Update metadata
+    const updatedMetadata = {
+      ...file.metadata,
+      title: title || file.metadata.title,
+      description: description || file.metadata.description,
+      journal: journal || file.metadata.journal,
+      year: year || file.metadata.year,
+      publisher: publisher || file.metadata.publisher,
+      authors: authors || file.metadata.authors,
+      tags: tags || file.metadata.tags,
+      sdgs: sdgs || file.metadata.sdgs,
+      doi: doi || file.metadata.doi,
+      lastModified: new Date()
+    };
+
+    // Since GridFS doesn't support metadata updates directly, we need to use MongoDB operations
+    await mongoose.connection.db.collection('papers.files').updateOne(
+      { _id: new mongoose.Types.ObjectId(paperId) },
+      { $set: { metadata: updatedMetadata } }
+    );
+
+    res.json({ message: 'Paper updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get paper statistics (admin only)
+router.get('/admin/stats', async (req, res) => {
+  try {
+    const totalPapers = await gfs.find({}).toArray();
+    const totalCount = totalPapers.length;
+    
+    // Calculate total file size
+    const totalSize = totalPapers.reduce((sum, file) => sum + (file.metadata.size || 0), 0);
+    
+    // Get recent uploads
+    const recentPapers = totalPapers
+      .sort((a, b) => new Date(b.metadata.uploadDate) - new Date(a.metadata.uploadDate))
+      .slice(0, 5)
+      .map(file => ({
+        id: file._id,
+        title: file.metadata.title,
+        uploadDate: file.metadata.uploadDate,
+        userId: file.metadata.userId,
+        size: file.metadata.size
+      }));
+
+    // Count by year
+    const papersByYear = {};
+    totalPapers.forEach(file => {
+      const year = file.metadata.year || 'Unknown';
+      papersByYear[year] = (papersByYear[year] || 0) + 1;
+    });
+
+    res.json({
+      totalPapers: totalCount,
+      totalSize,
+      recentPapers,
+      papersByYear
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });

@@ -33,7 +33,8 @@ export const authService = {
 };
 
 // Paper management services
-export const paperService = {  // Upload paper
+export const paperService = {
+  // Upload paper
   upload: async (file, userId, title, description, additionalData = {}) => {
     try {
       const formData = new FormData();
@@ -164,6 +165,80 @@ export const paperService = {  // Upload paper
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to add comment' };
+    }
+  },
+
+  // Admin functions
+  // Delete paper (admin only)
+  adminDeletePaper: async (paperId) => {
+    try {
+      const response = await api.delete(`/papers/admin/papers/${paperId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete paper' };
+    }
+  },
+
+  // Update paper (admin only)
+  adminUpdatePaper: async (paperId, paperData) => {
+    try {
+      const response = await api.put(`/papers/admin/papers/${paperId}`, paperData);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update paper' };
+    }
+  },
+
+  // Get paper statistics (admin only)
+  adminGetPaperStats: async () => {
+    try {
+      const response = await api.get('/papers/admin/stats');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch paper statistics' };
+    }
+  }
+};
+
+// User management services (admin only)
+export const userService = {
+  // Get all users (admin only)
+  getAllUsers: async () => {
+    try {
+      const response = await api.get('/auth/admin/users');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch users' };
+    }
+  },
+
+  // Update user role (admin only)
+  updateUserRole: async (userId, role) => {
+    try {
+      const response = await api.put(`/auth/admin/users/${userId}/role`, { role });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update user role' };
+    }
+  },
+
+  // Delete user (admin only)
+  deleteUser: async (userId) => {
+    try {
+      const response = await api.delete(`/auth/admin/users/${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to delete user' };
+    }
+  },
+
+  // Get user statistics (admin only)
+  getUserStats: async () => {
+    try {
+      const response = await api.get('/auth/admin/stats');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch user statistics' };
     }
   }
 };
