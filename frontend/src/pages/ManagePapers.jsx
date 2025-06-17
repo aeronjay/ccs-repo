@@ -277,9 +277,14 @@ const ManagePapers = () => {
     return sdg ? sdg.name : `SDG ${sdgId}`;
   };
 
-  return (
-    <div className="manage-papers-container">
+  return (    <div className="manage-papers-container">
       <div className="page-header">
+        <button
+          onClick={() => navigate(-1)}
+          className="back-button"
+        >
+          ← Back
+        </button>
         <h1 className="page-title">Upload Research Paper</h1>
       </div>
       
