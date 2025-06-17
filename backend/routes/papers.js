@@ -328,18 +328,11 @@ router.post('/:paperId/like', async (req, res) => {
     // Check if user already liked
     if (userLikes.includes(userId)) {
       return res.status(400).json({ message: 'You have already liked this paper' });
-    }
-
-    // Remove from dislikes if exists
+    }    // Remove from dislikes if exists
     const updatedDislikes = userDislikes.filter(id => id !== userId);
     const updatedLikes = [...userLikes, userId];
 
-    // Update the file metadata
-    await gfs.drop();
-    gfs = new GridFSBucket(mongoose.connection.db, { bucketName: 'papers' });
-    
-    // We need to update the metadata by re-uploading the file with new metadata
-    // For now, we'll use a simpler approach with direct database update
+    // Update the file metadata directly in the database
     await mongoose.connection.db.collection('papers.files').updateOne(
       { _id: new mongoose.Types.ObjectId(paperId) },
       { 
@@ -385,13 +378,11 @@ router.post('/:paperId/dislike', async (req, res) => {
     // Check if user already disliked
     if (userDislikes.includes(userId)) {
       return res.status(400).json({ message: 'You have already disliked this paper' });
-    }
-
-    // Remove from likes if exists
+    }    // Remove from likes if exists
     const updatedLikes = userLikes.filter(id => id !== userId);
     const updatedDislikes = [...userDislikes, userId];
 
-    // Update the file metadata
+    // Update the file metadata directly in the database
     await mongoose.connection.db.collection('papers.files').updateOne(
       { _id: new mongoose.Types.ObjectId(paperId) },
       { 
@@ -440,11 +431,9 @@ router.post('/:paperId/comment', async (req, res) => {
       content,
       timestamp: new Date(),
       parentCommentId: parentCommentId || null
-    };
+    };    const updatedComments = [...existingComments, newComment];
 
-    const updatedComments = [...existingComments, newComment];
-
-    // Update the file metadata
+    // Update the file metadata directly in the database
     await mongoose.connection.db.collection('papers.files').updateOne(
       { _id: new mongoose.Types.ObjectId(paperId) },
       { 
