@@ -3,6 +3,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const authRoutes = require('./routes/auth');
+const papersRoutes = require('./routes/papers');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -18,6 +19,7 @@ mongoose.connect(process.env.MONGODB_URI)
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/papers', papersRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend API is running!');
