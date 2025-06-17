@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { authService } from '../services/service';
 import '../../styles/Register.css';
 
 const Register = () => {
@@ -46,7 +47,6 @@ const Register = () => {
 
     return null;
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -60,17 +60,12 @@ const Register = () => {
     }
 
     try {
-      // TODO: Replace with actual API call
-      console.log('Registration attempt:', formData);
+      await authService.register(formData.email, formData.password, formData.role);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // For now, just redirect to sign in
       alert('Registration successful! Please sign in.');
       navigate('/signin');
-    } catch (err) {
-      setError('Registration failed. Please try again.');
+    } catch (error) {
+      setError(error.message || 'Registration failed. Please try again.');
     } finally {
       setLoading(false);
     }

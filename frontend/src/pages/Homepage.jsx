@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../../styles/Homepage.css';
 
@@ -6,6 +6,65 @@ const Homepage = () => {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Date');
+  const [user, setUser] = useState(null);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const userMenuRef = useRef(null);
+
+  // Check if user is logged in when component mounts
+  useEffect(() => {
+    const loggedInUser = localStorage.getItem('user');
+    if (loggedInUser) {
+      setUser(JSON.parse(loggedInUser));
+    }
+  }, []);
+
+  // Close user menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
+        setShowUserMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem('user');
+    setUser(null);
+    setShowUserMenu(false);
+  };
+  const handleUserMenuClick = (action) => {
+    setShowUserMenu(false);
+    switch (action) {
+      case 'manage-papers':
+        navigate('/manage-papers');
+        break;
+      case 'settings':
+        navigate('/settings');
+        break;
+      case 'admin-manage-papers':
+        navigate('/admin/manage-papers');
+        break;
+      case 'admin-manage-users':
+        navigate('/admin/manage-users');
+        break;
+      case 'admin-messages':
+        navigate('/admin/messages');
+        break;
+      case 'admin-settings':
+        navigate('/admin/settings');
+        break;
+      case 'logout':
+        handleLogout();
+        break;
+      default:
+        break;
+    }
+  };
 
   // Mock data for papers - you'll replace this with actual API calls
   const papers = [
@@ -94,19 +153,66 @@ const Homepage = () => {
   };
 
   return (
-    <div className="homepage">
-      {/* Header */}
+    <div className="homepage">      {/* Header */}
       <header className="header">
         <div className="header-content">
           <div className="logo-section">
             <h1>CCS Research</h1>
-          </div>          <div className="header-actions">
-            <button 
-              className="sign-in-btn"
-              onClick={() => navigate('/signin')}
-            >
-              Sign in
-            </button>
+          </div>
+          <div className="header-actions">            {user ? (
+              <div className="user-menu-container" ref={userMenuRef}>
+                <button 
+                  className="user-icon"
+                  onClick={() => setShowUserMenu(!showUserMenu)}
+                >
+                  👤 {user.email}
+                </button>{showUserMenu && (
+                  <div className="user-dropdown">
+                    <div className="user-info">
+                      <span className="user-email">{user.email}</span>
+                      <span className="user-role">{user.role}</span>
+                    </div>
+                    <div className="dropdown-divider"></div>
+                    {user.role === 'user' ? (
+                      <>
+                        <button onClick={() => handleUserMenuClick('manage-papers')}>
+                          � Manage My Papers
+                        </button>
+                        <button onClick={() => handleUserMenuClick('settings')}>
+                          ⚙️ Settings
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button onClick={() => handleUserMenuClick('admin-manage-papers')}>
+                          📄 Manage Papers
+                        </button>
+                        <button onClick={() => handleUserMenuClick('admin-manage-users')}>
+                          👥 Manage Users
+                        </button>
+                        <button onClick={() => handleUserMenuClick('admin-messages')}>
+                          💬 Messages
+                        </button>
+                        <button onClick={() => handleUserMenuClick('admin-settings')}>
+                          ⚙️ Settings
+                        </button>
+                      </>
+                    )}
+                    <div className="dropdown-divider"></div>
+                    <button onClick={() => handleUserMenuClick('logout')} className="logout-btn">
+                      🚪 Logout
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <button 
+                className="sign-in-btn"
+                onClick={() => navigate('/signin')}
+              >
+                Sign in
+              </button>
+            )}
           </div>
         </div>
       </header>

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { authService } from '../services/service';
 import '../../styles/SignIn.css';
 
 const SignIn = () => {
@@ -19,7 +20,6 @@ const SignIn = () => {
     // Clear error when user starts typing
     if (error) setError('');
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,29 +30,17 @@ const SignIn = () => {
       setError('Please fill in all fields');
       setLoading(false);
       return;
-    }
-
-    try {
-      // TODO: Replace with actual API call
-      console.log('Sign in attempt:', formData);
+    }    try {
+      const response = await authService.login(formData.email, formData.password);
       
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Store user data in localStorage
+      localStorage.setItem('user', JSON.stringify(response.user));
       
-      // For now, just redirect based on email (you'll replace this with actual authentication)
-      if (formData.email.includes('admin')) {
-        // Admin user
-        localStorage.setItem('userRole', 'admin');
-        localStorage.setItem('userEmail', formData.email);
-        navigate('/admin-dashboard');
-      } else {
-        // Regular user
-        localStorage.setItem('userRole', 'user');
-        localStorage.setItem('userEmail', formData.email);
-        navigate('/user-dashboard');
-      }
-    } catch (err) {
-      setError('Invalid email or password');
+      // Redirect to homepage
+      navigate('/');
+      
+    } catch (error) {
+      setError(error.message || 'Login failed');
     } finally {
       setLoading(false);
     }
