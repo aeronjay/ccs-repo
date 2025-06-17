@@ -33,7 +33,8 @@ export const authService = {
 };
 
 // Paper management services
-export const paperService = {  // Upload paper
+export const paperService = {
+  // Upload paper
   upload: async (file, userId, title, description, additionalData = {}) => {
     try {
       const formData = new FormData();
@@ -93,6 +94,7 @@ export const paperService = {  // Upload paper
       throw error.response?.data || { message: 'Delete failed' };
     }
   },
+
   // Get all papers (admin only)
   getAllPapers: async () => {
     try {
@@ -110,6 +112,61 @@ export const paperService = {  // Upload paper
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch papers' };
+    }
+  },
+
+  // Get single paper details
+  getPaperDetails: async (paperId) => {
+    try {
+      const response = await api.get(`/papers/${paperId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch paper details' };
+    }
+  },
+
+  // Like a paper
+  likePaper: async (paperId, userId) => {
+    try {
+      const response = await api.post(`/papers/${paperId}/like`, { userId });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to like paper' };
+    }
+  },
+
+  // Dislike a paper
+  dislikePaper: async (paperId, userId) => {
+    try {
+      const response = await api.post(`/papers/${paperId}/dislike`, { userId });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to dislike paper' };
+    }
+  },
+
+  // Add comment to a paper
+  addComment: async (paperId, userId, userEmail, content, parentCommentId = null) => {
+    try {
+      const response = await api.post(`/papers/${paperId}/comment`, {
+        userId,
+        userEmail,
+        content,
+        parentCommentId
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to add comment' };
+    }
+  },
+
+  // Check download permissions
+  checkDownloadPermission: async (paperId, userId) => {
+    try {
+      const response = await api.get(`/papers/${paperId}/download-permission?userId=${userId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to check permissions' };
     }
   }
 };

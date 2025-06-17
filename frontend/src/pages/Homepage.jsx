@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
+import PaperDetailModal from '../components/PaperDetailModal';
 import '../../styles/Homepage.css';
 
 const Homepage = () => {
@@ -12,6 +13,8 @@ const Homepage = () => {
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [selectedPaperId, setSelectedPaperId] = useState(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const userMenuRef = useRef(null);
 
   // Check if user is logged in when component mounts
@@ -56,8 +59,7 @@ const Homepage = () => {
     localStorage.removeItem('user');
     setUser(null);
     setShowUserMenu(false);
-  };
-  const handleUserMenuClick = (action) => {
+  };  const handleUserMenuClick = (action) => {
     setShowUserMenu(false);
     switch (action) {
       case 'manage-papers':
@@ -82,7 +84,18 @@ const Homepage = () => {
         handleLogout();
         break;
       default:
-        break;    }
+        break;
+    }
+  };
+
+  const handlePaperTitleClick = (paperId) => {
+    setSelectedPaperId(paperId);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setSelectedPaperId(null);
   };
 
   const filteredPapers = papers.filter(paper =>
@@ -262,10 +275,14 @@ const Homepage = () => {
                 {papers.length === 0 ? 'No papers available yet.' : 'No papers match your search criteria.'}
               </div>
             ) : (
-              sortedPapers.map(paper => (
-                <div key={paper.id} className="paper-card">
+              sortedPapers.map(paper => (                <div key={paper.id} className="paper-card">
                   <div className="paper-content">
-                    <h3 className="paper-title">{paper.title}</h3>
+                    <h3 
+                      className="paper-title" 
+                      onClick={() => handlePaperTitleClick(paper.id)}
+                    >
+                      {paper.title}
+                    </h3>
                     
                     <div className="paper-meta">
                       <span className="journal">{paper.journal}</span>
@@ -308,10 +325,17 @@ const Homepage = () => {
                   </div>
                 </div>
               ))
-            )}
-          </div>
+            )}          </div>
         </div>
       </main>
+
+      {/* Paper Detail Modal */}
+      <PaperDetailModal
+        paperId={selectedPaperId}
+        isOpen={isModalOpen}
+        onClose={handleCloseModal}
+        user={user}
+      />
     </div>
   );
 };
