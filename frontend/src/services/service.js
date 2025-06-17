@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = 'http://localhost:3000/api';
+const baseURL = 'https://ccs-repo.onrender.com/api';
 
 const api = axios.create({
   baseURL,
