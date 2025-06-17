@@ -33,15 +33,21 @@ export const authService = {
 };
 
 // Paper management services
-export const paperService = {
-  // Upload paper
-  upload: async (file, userId, title, description) => {
+export const paperService = {  // Upload paper
+  upload: async (file, userId, title, description, additionalData = {}) => {
     try {
       const formData = new FormData();
       formData.append('paper', file);
       formData.append('userId', userId);
       if (title) formData.append('title', title);
       if (description) formData.append('description', description);
+      
+      // Add additional fields
+      if (additionalData.journal) formData.append('journal', additionalData.journal);
+      if (additionalData.year) formData.append('year', additionalData.year);
+      if (additionalData.authors) formData.append('authors', JSON.stringify(additionalData.authors));
+      if (additionalData.tags) formData.append('tags', JSON.stringify(additionalData.tags));
+      if (additionalData.doi) formData.append('doi', additionalData.doi);
 
       const response = await api.post('/papers/upload', formData, {
         headers: {
@@ -87,7 +93,6 @@ export const paperService = {
       throw error.response?.data || { message: 'Delete failed' };
     }
   },
-
   // Get all papers (admin only)
   getAllPapers: async () => {
     try {
@@ -95,6 +100,16 @@ export const paperService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch all papers' };
+    }
+  },
+
+  // Get all papers for public display (homepage)
+  getPublicPapers: async () => {
+    try {
+      const response = await api.get('/papers/public');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch papers' };
     }
   }
 };

@@ -8,6 +8,11 @@ const ManagePapers = () => {
   const [selectedFile, setSelectedFile] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
+  const [journal, setJournal] = useState('');
+  const [year, setYear] = useState(new Date().getFullYear().toString());
+  const [authors, setAuthors] = useState('');
+  const [tags, setTags] = useState('');
+  const [doi, setDoi] = useState('');
   const [message, setMessage] = useState('');
 
   // Get user ID from localStorage (you might want to use a proper auth context)
@@ -62,15 +67,27 @@ const ManagePapers = () => {
     if (!selectedFile) {
       setMessage('Please select a file');
       return;
-    }
-
-    setUploading(true);
+    }    setUploading(true);
     try {
-      await paperService.upload(selectedFile, userId, title, description);
+      // Prepare additional data
+      const additionalData = {
+        journal,
+        year,
+        authors: authors.split(',').map(author => author.trim()).filter(author => author),
+        tags: tags.split(',').map(tag => tag.trim()).filter(tag => tag),
+        doi: doi || `DOI-${Date.now()}` // Generate a simple DOI if not provided
+      };
+
+      await paperService.upload(selectedFile, userId, title, description, additionalData);
       setMessage('Paper uploaded successfully!');
       setSelectedFile(null);
       setTitle('');
       setDescription('');
+      setJournal('');
+      setYear(new Date().getFullYear().toString());
+      setAuthors('');
+      setTags('');
+      setDoi('');
       document.getElementById('fileInput').value = '';
       loadPapers(); // Refresh the list
     } catch (error) {
@@ -171,8 +188,7 @@ const ManagePapers = () => {
               placeholder="Enter paper title"
             />
           </div>
-          
-          <div style={{ marginBottom: '15px' }}>
+            <div style={{ marginBottom: '15px' }}>
             <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
               Description (optional):
             </label>
@@ -183,17 +199,87 @@ const ManagePapers = () => {
               placeholder="Enter paper description"
             />
           </div>
-          
-          <button
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Journal <span style={{ color: 'red' }}>*</span>:
+            </label>
+            <input
+              type="text"
+              value={journal}
+              onChange={(e) => setJournal(e.target.value)}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              placeholder="e.g., IEEE Transactions on Neural Networks"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Publication Year <span style={{ color: 'red' }}>*</span>:
+            </label>
+            <input
+              type="number"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              placeholder="e.g., 2023"
+              min="1900"
+              max={new Date().getFullYear() + 5}
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Authors <span style={{ color: 'red' }}>*</span>:
+            </label>
+            <input
+              type="text"
+              value={authors}
+              onChange={(e) => setAuthors(e.target.value)}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              placeholder="e.g., John Doe, Jane Smith, Bob Johnson (comma-separated)"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              Tags <span style={{ color: 'red' }}>*</span>:
+            </label>
+            <input
+              type="text"
+              value={tags}
+              onChange={(e) => setTags(e.target.value)}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              placeholder="e.g., machine learning, AI, neural networks (comma-separated)"
+              required
+            />
+          </div>
+
+          <div style={{ marginBottom: '15px' }}>
+            <label style={{ display: 'block', marginBottom: '5px', fontWeight: 'bold' }}>
+              DOI (optional):
+            </label>
+            <input
+              type="text"
+              value={doi}
+              onChange={(e) => setDoi(e.target.value)}
+              style={{ width: '100%', padding: '8px', border: '1px solid #ccc', borderRadius: '4px' }}
+              placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
+            />
+          </div>
+            <button
             type="submit"
-            disabled={uploading || !selectedFile}
+            disabled={uploading || !selectedFile || !title || !journal || !year || !authors || !tags}
             style={{
-              backgroundColor: uploading || !selectedFile ? '#ccc' : '#007bff',
+              backgroundColor: uploading || !selectedFile || !title || !journal || !year || !authors || !tags ? '#ccc' : '#007bff',
               color: 'white',
               padding: '10px 20px',
               border: 'none',
               borderRadius: '4px',
-              cursor: uploading || !selectedFile ? 'not-allowed' : 'pointer'
+              cursor: uploading || !selectedFile || !title || !journal || !year || !authors || !tags ? 'not-allowed' : 'pointer'
             }}
           >
             {uploading ? 'Uploading...' : 'Upload Paper'}
@@ -216,9 +302,41 @@ const ManagePapers = () => {
                 borderRadius: '8px',
                 padding: '15px',
                 backgroundColor: 'white'
-              }}>
-                <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>{paper.title}</h3>
+              }}>                <h3 style={{ margin: '0 0 10px 0', color: '#333' }}>{paper.title}</h3>
+                {paper.journal && (
+                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
+                    <strong>Journal:</strong> {paper.journal} {paper.year && `• ${paper.year}`}
+                  </div>
+                )}
+                {paper.authors && paper.authors.length > 0 && (
+                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
+                    <strong>Authors:</strong> {paper.authors.join(', ')}
+                  </div>
+                )}
+                {paper.doi && (
+                  <div style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
+                    <strong>DOI:</strong> {paper.doi}
+                  </div>
+                )}
                 <p style={{ margin: '0 0 10px 0', color: '#666' }}>{paper.description}</p>
+                {paper.tags && paper.tags.length > 0 && (
+                  <div style={{ marginBottom: '10px' }}>
+                    {paper.tags.map((tag, index) => (
+                      <span key={index} style={{ 
+                        display: 'inline-block', 
+                        backgroundColor: '#e3f2fd', 
+                        color: '#1976d2', 
+                        padding: '2px 8px', 
+                        borderRadius: '12px', 
+                        fontSize: '12px', 
+                        marginRight: '5px', 
+                        marginBottom: '5px' 
+                      }}>
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
                 <div style={{ fontSize: '14px', color: '#888', marginBottom: '10px' }}>
                   <strong>Filename:</strong> {paper.filename} | 
                   <strong> Size:</strong> {formatFileSize(paper.size)} | 

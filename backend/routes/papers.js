@@ -39,12 +39,21 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
-    }
-
-    const { userId, title, description } = req.body;
+    }    const { userId, title, description, journal, year, authors, tags, doi } = req.body;
     
     if (!userId) {
       return res.status(400).json({ message: 'User ID is required' });
+    }
+
+    // Parse JSON fields
+    let parsedAuthors = [];
+    let parsedTags = [];
+    
+    try {
+      if (authors) parsedAuthors = JSON.parse(authors);
+      if (tags) parsedTags = JSON.parse(tags);
+    } catch (error) {
+      return res.status(400).json({ message: 'Invalid authors or tags format' });
     }
 
     // Create upload stream
@@ -53,9 +62,19 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
         userId: userId,
         title: title || req.file.originalname,
         description: description || '',
+        journal: journal || '',
+        year: year || new Date().getFullYear().toString(),
+        authors: parsedAuthors,
+        tags: parsedTags,
+        doi: doi || `DOI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         uploadDate: new Date(),
         contentType: req.file.mimetype,
-        size: req.file.size
+        size: req.file.size,
+        // Add default ratings for homepage display
+        impact: 0,
+        clarity: 0,
+        likes: 0,
+        comments: 0
       }
     });
 
@@ -88,15 +107,23 @@ router.get('/user/:userId', async (req, res) => {
     const { userId } = req.params;
     
     const files = await gfs.find({ 'metadata.userId': userId }).toArray();
-    
-    const papers = files.map(file => ({
+      const papers = files.map(file => ({
       id: file._id,
       filename: file.filename,
       title: file.metadata.title,
       description: file.metadata.description,
+      journal: file.metadata.journal,
+      year: file.metadata.year,
+      authors: file.metadata.authors || [],
+      tags: file.metadata.tags || [],
+      doi: file.metadata.doi,
       uploadDate: file.metadata.uploadDate,
       size: file.metadata.size,
-      contentType: file.metadata.contentType
+      contentType: file.metadata.contentType,
+      impact: file.metadata.impact || 0,
+      clarity: file.metadata.clarity || 0,
+      likes: file.metadata.likes || 0,
+      comments: file.metadata.comments || 0
     }));
 
     res.json(papers);
@@ -176,6 +203,35 @@ router.delete('/:fileId', async (req, res) => {
   }
 });
 
+// Get all papers for public display (homepage)
+router.get('/public', async (req, res) => {
+  try {
+    const files = await gfs.find({}).toArray();
+    
+    const papers = files.map(file => ({
+      id: file._id,
+      title: file.metadata.title,
+      journal: file.metadata.journal || 'Unknown Journal',
+      year: file.metadata.year || new Date().getFullYear().toString(),
+      doi: file.metadata.doi || 'DOI link',
+      authors: file.metadata.authors || [],
+      abstract: file.metadata.description || 'No abstract available.',
+      tags: file.metadata.tags || [],
+      impact: file.metadata.impact || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
+      clarity: file.metadata.clarity || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
+      likes: file.metadata.likes || Math.floor(Math.random() * 200),
+      comments: file.metadata.comments || Math.floor(Math.random() * 5),
+      uploadDate: file.metadata.uploadDate,
+      filename: file.filename,
+      size: file.metadata.size
+    }));
+
+    res.json(papers);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Get all papers (for admin)
 router.get('/admin/all', async (req, res) => {
   try {
@@ -186,10 +242,19 @@ router.get('/admin/all', async (req, res) => {
       filename: file.filename,
       title: file.metadata.title,
       description: file.metadata.description,
+      journal: file.metadata.journal,
+      year: file.metadata.year,
+      authors: file.metadata.authors || [],
+      tags: file.metadata.tags || [],
+      doi: file.metadata.doi,
       userId: file.metadata.userId,
       uploadDate: file.metadata.uploadDate,
       size: file.metadata.size,
-      contentType: file.metadata.contentType
+      contentType: file.metadata.contentType,
+      impact: file.metadata.impact || 0,
+      clarity: file.metadata.clarity || 0,
+      likes: file.metadata.likes || 0,
+      comments: file.metadata.comments || 0
     }));
 
     res.json(papers);
