@@ -39,7 +39,7 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ message: 'No file uploaded' });
-    }    const { userId, title, description, journal, year, authors, tags, doi } = req.body;
+    }    const { userId, title, description, journal, year, authors, tags, doi, publisher, sdgs } = req.body;
     
     if (!userId) {
       return res.status(400).json({ message: 'User ID is required' });
@@ -48,12 +48,14 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
     // Parse JSON fields
     let parsedAuthors = [];
     let parsedTags = [];
+    let parsedSDGs = [];
     
     try {
       if (authors) parsedAuthors = JSON.parse(authors);
       if (tags) parsedTags = JSON.parse(tags);
+      if (sdgs) parsedSDGs = JSON.parse(sdgs);
     } catch (error) {
-      return res.status(400).json({ message: 'Invalid authors or tags format' });
+      return res.status(400).json({ message: 'Invalid authors, tags, or sdgs format' });
     }    // Create upload stream
     const uploadStream = gfs.openUploadStream(req.file.originalname, {
       metadata: {
@@ -62,8 +64,10 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
         description: description || '',
         journal: journal || '',
         year: year || new Date().getFullYear().toString(),
+        publisher: publisher || '',
         authors: parsedAuthors,
         tags: parsedTags,
+        sdgs: parsedSDGs,
         doi: doi || `DOI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
         uploadDate: new Date(),
         contentType: req.file.mimetype,
@@ -107,16 +111,18 @@ router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
-    const files = await gfs.find({ 'metadata.userId': userId }).toArray();
-      const papers = files.map(file => ({
+    const files = await gfs.find({ 'metadata.userId': userId }).toArray();      const papers = files.map(file => ({
       id: file._id,
       filename: file.filename,
       title: file.metadata.title,
       description: file.metadata.description,
       journal: file.metadata.journal,
       year: file.metadata.year,
+      publisher: file.metadata.publisher || '',
       authors: file.metadata.authors || [],
-      tags: file.metadata.tags || [],      doi: file.metadata.doi,
+      tags: file.metadata.tags || [],
+      sdgs: file.metadata.sdgs || [],
+      doi: file.metadata.doi,
       uploadDate: file.metadata.uploadDate,
       size: file.metadata.size,
       contentType: file.metadata.contentType,
@@ -207,16 +213,18 @@ router.delete('/:fileId', async (req, res) => {
 // Get all papers for public display (homepage)
 router.get('/public', async (req, res) => {
   try {
-    const files = await gfs.find({}).toArray();
-      const papers = files.map(file => ({
+    const files = await gfs.find({}).toArray();      const papers = files.map(file => ({
       id: file._id,
       title: file.metadata.title,
       journal: file.metadata.journal || 'Unknown Journal',
       year: file.metadata.year || new Date().getFullYear().toString(),
+      publisher: file.metadata.publisher || '',
       doi: file.metadata.doi || 'DOI link',
       authors: file.metadata.authors || [],
       abstract: file.metadata.description || 'No abstract available.',
-      tags: file.metadata.tags || [],      impact: file.metadata.impact || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
+      tags: file.metadata.tags || [],
+      sdgs: file.metadata.sdgs || [],
+      impact: file.metadata.impact || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
       clarity: file.metadata.clarity || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
       likes: file.metadata.likes || 0,
       dislikes: file.metadata.dislikes || 0,
@@ -235,16 +243,17 @@ router.get('/public', async (req, res) => {
 // Get all papers (for admin)
 router.get('/admin/all', async (req, res) => {
   try {
-    const files = await gfs.find({}).toArray();
-      const papers = files.map(file => ({
+    const files = await gfs.find({}).toArray();      const papers = files.map(file => ({
       id: file._id,
       filename: file.filename,
       title: file.metadata.title,
       description: file.metadata.description,
       journal: file.metadata.journal,
       year: file.metadata.year,
+      publisher: file.metadata.publisher || '',
       authors: file.metadata.authors || [],
       tags: file.metadata.tags || [],
+      sdgs: file.metadata.sdgs || [],
       doi: file.metadata.doi,
       userId: file.metadata.userId,
       uploadDate: file.metadata.uploadDate,
@@ -274,16 +283,17 @@ router.get('/:paperId', async (req, res) => {
       return res.status(404).json({ message: 'Paper not found' });
     }
 
-    const file = files[0];
-    const paper = {
+    const file = files[0];    const paper = {
       id: file._id,
       filename: file.filename,
       title: file.metadata.title,
       description: file.metadata.description,
       journal: file.metadata.journal,
       year: file.metadata.year,
+      publisher: file.metadata.publisher || '',
       authors: file.metadata.authors || [],
       tags: file.metadata.tags || [],
+      sdgs: file.metadata.sdgs || [],
       doi: file.metadata.doi,
       userId: file.metadata.userId,
       uploadDate: file.metadata.uploadDate,
