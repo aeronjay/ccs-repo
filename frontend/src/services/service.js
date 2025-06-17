@@ -102,7 +102,6 @@ export const paperService = {  // Upload paper
       throw error.response?.data || { message: 'Failed to fetch all papers' };
     }
   },
-
   // Get all papers for public display (homepage)
   getPublicPapers: async () => {
     try {
@@ -110,6 +109,15 @@ export const paperService = {  // Upload paper
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch papers' };
+    }
+  },
+  // Get paper details by ID
+  getPaperDetails: async (paperId) => {
+    try {
+      const response = await api.get(`/papers/${paperId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch paper details' };
     }
   }
 };
