@@ -216,12 +216,11 @@ router.get('/public', async (req, res) => {
       doi: file.metadata.doi || 'DOI link',
       authors: file.metadata.authors || [],
       abstract: file.metadata.description || 'No abstract available.',
-      tags: file.metadata.tags || [],
-      impact: file.metadata.impact || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
+      tags: file.metadata.tags || [],      impact: file.metadata.impact || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
       clarity: file.metadata.clarity || (Math.random() * 2 + 3).toFixed(1), // Random rating 3-5
-      likes: file.metadata.likes || Math.floor(Math.random() * 200),
-      dislikes: file.metadata.dislikes || Math.floor(Math.random() * 20),
-      comments: file.metadata.comments || Math.floor(Math.random() * 5),
+      likes: file.metadata.likes || 0,
+      dislikes: file.metadata.dislikes || 0,
+      comments: (file.metadata.paperComments || []).length,
       uploadDate: file.metadata.uploadDate,
       filename: file.filename,
       size: file.metadata.size
