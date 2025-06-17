@@ -110,14 +110,60 @@ export const paperService = {  // Upload paper
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch papers' };
     }
-  },
-  // Get paper details by ID
+  },  // Get paper details by ID
   getPaperDetails: async (paperId) => {
     try {
       const response = await api.get(`/papers/${paperId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch paper details' };
+    }
+  },
+
+  // Check download permission
+  checkDownloadPermission: async (paperId, userId) => {
+    try {
+      const response = await api.get(`/papers/${paperId}/download-permission`, {
+        params: { userId }
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to check download permission' };
+    }
+  },
+
+  // Like paper
+  likePaper: async (paperId, userId) => {
+    try {
+      const response = await api.post(`/papers/${paperId}/like`, { userId });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to like paper' };
+    }
+  },
+
+  // Dislike paper
+  dislikePaper: async (paperId, userId) => {
+    try {
+      const response = await api.post(`/papers/${paperId}/dislike`, { userId });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to dislike paper' };
+    }
+  },
+
+  // Add comment
+  addComment: async (paperId, userId, userEmail, content, parentCommentId = null) => {
+    try {
+      const response = await api.post(`/papers/${paperId}/comment`, {
+        userId,
+        userEmail,
+        content,
+        parentCommentId
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to add comment' };
     }
   }
 };
