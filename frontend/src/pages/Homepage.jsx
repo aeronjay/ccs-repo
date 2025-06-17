@@ -15,7 +15,17 @@ const Homepage = () => {
   const [error, setError] = useState('');
   const [selectedPaperId, setSelectedPaperId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [filters, setFilters] = useState({
+    sdgs: [],
+    yearRange: { min: '', max: '' },
+    publisher: '',
+    journal: '',
+    minImpact: '',
+    minClarity: ''
+  });
   const userMenuRef = useRef(null);
+  const filtersRef = useRef(null);
 
   // Check if user is logged in when component mounts
   useEffect(() => {
@@ -40,12 +50,14 @@ const Homepage = () => {
       setLoading(false);
     }
   };
-
   // Close user menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
         setShowUserMenu(false);
+      }
+      if (filtersRef.current && !filtersRef.current.contains(event.target)) {
+        setShowFilters(false);
       }
     };
 
@@ -54,12 +66,90 @@ const Homepage = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
   const handleLogout = () => {
     localStorage.removeItem('user');
     setUser(null);
     setShowUserMenu(false);
-  };  const handleUserMenuClick = (action) => {
+  };
+
+  const handleFilterChange = (filterType, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [filterType]: value
+    }));
+  };
+
+  const handleSDGToggle = (sdg) => {
+    setFilters(prev => ({
+      ...prev,
+      sdgs: prev.sdgs.includes(sdg) 
+        ? prev.sdgs.filter(s => s !== sdg)
+        : [...prev.sdgs, sdg]
+    }));
+  };
+
+  const clearFilters = () => {
+    setFilters({
+      sdgs: [],
+      yearRange: { min: '', max: '' },
+      publisher: '',
+      journal: '',
+      minImpact: '',
+      minClarity: ''
+    });
+  };
+  const getAvailableSDGs = () => {
+    const allSDGs = new Set();
+    papers.forEach(paper => {
+      if (paper.sdgs) {
+        paper.sdgs.forEach(sdg => allSDGs.add(sdg));
+      }
+    });
+    
+    // Add common SDGs even if not in papers yet
+    const commonSDGs = [
+      'SDG 1: No Poverty',
+      'SDG 2: Zero Hunger',
+      'SDG 3: Good Health and Well-being',
+      'SDG 4: Quality Education',
+      'SDG 5: Gender Equality',
+      'SDG 6: Clean Water and Sanitation',
+      'SDG 7: Affordable and Clean Energy',
+      'SDG 8: Decent Work and Economic Growth',
+      'SDG 9: Industry, Innovation and Infrastructure',
+      'SDG 10: Reduced Inequality',
+      'SDG 11: Sustainable Cities and Communities',
+      'SDG 12: Responsible Consumption and Production',
+      'SDG 13: Climate Action',
+      'SDG 14: Life Below Water',
+      'SDG 15: Life on Land',
+      'SDG 16: Peace and Justice Strong Institutions',
+      'SDG 17: Partnerships to achieve the Goal'
+    ];
+    
+    commonSDGs.forEach(sdg => allSDGs.add(sdg));
+    return Array.from(allSDGs).sort();
+  };
+
+  const getAvailablePublishers = () => {
+    const publishers = new Set();
+    papers.forEach(paper => {
+      if (paper.publisher) {
+        publishers.add(paper.publisher);
+      }
+    });
+    return Array.from(publishers).sort();
+  };
+
+  const getAvailableJournals = () => {
+    const journals = new Set();
+    papers.forEach(paper => {
+      if (paper.journal) {
+        journals.add(paper.journal);
+      }
+    });
+    return Array.from(journals).sort();
+  };const handleUserMenuClick = (action) => {
     setShowUserMenu(false);
     switch (action) {
       case 'manage-papers':
@@ -97,12 +187,52 @@ const Homepage = () => {
     setIsModalOpen(false);
     setSelectedPaperId(null);
   };
+  const filteredPapers = papers.filter(paper => {
+    // Text search
+    const matchesSearch = searchQuery === '' || 
+      paper.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      paper.authors.some(author => author.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      paper.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
 
-  const filteredPapers = papers.filter(paper =>
-    paper.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    paper.authors.some(author => author.toLowerCase().includes(searchQuery.toLowerCase())) ||
-    paper.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+    if (!matchesSearch) return false;
+
+    // SDG filter
+    if (filters.sdgs.length > 0) {
+      const paperSDGs = paper.sdgs || [];
+      const hasMatchingSDG = filters.sdgs.some(sdg => paperSDGs.includes(sdg));
+      if (!hasMatchingSDG) return false;
+    }
+
+    // Year range filter
+    if (filters.yearRange.min && parseInt(paper.year) < parseInt(filters.yearRange.min)) {
+      return false;
+    }
+    if (filters.yearRange.max && parseInt(paper.year) > parseInt(filters.yearRange.max)) {
+      return false;
+    }
+
+    // Publisher filter
+    if (filters.publisher && paper.publisher !== filters.publisher) {
+      return false;
+    }
+
+    // Journal filter
+    if (filters.journal && paper.journal !== filters.journal) {
+      return false;
+    }
+
+    // Impact rating filter
+    if (filters.minImpact && parseFloat(paper.impact) < parseFloat(filters.minImpact)) {
+      return false;
+    }
+
+    // Clarity rating filter
+    if (filters.minClarity && parseFloat(paper.clarity) < parseFloat(filters.minClarity)) {
+      return false;
+    }
+
+    return true;
+  });
 
   const sortedPapers = [...filteredPapers].sort((a, b) => {
     switch (sortBy) {
@@ -222,9 +352,122 @@ const Homepage = () => {
                   className="search-input"
                 />
                 <button className="search-btn">Search</button>
-              </div>
-              <div className="filters">
-                <button className="filter-btn">🔽 Filters</button>
+              </div>              <div className="filters">
+                <div className="filter-dropdown-container" ref={filtersRef}>
+                  <button 
+                    className={`filter-btn ${showFilters ? 'active' : ''}`}
+                    onClick={() => setShowFilters(!showFilters)}
+                  >
+                    🔽 Filters {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max || filters.minImpact || filters.minClarity) && <span className="filter-count">({filters.sdgs.length + (filters.publisher ? 1 : 0) + (filters.journal ? 1 : 0) + (filters.yearRange.min ? 1 : 0) + (filters.yearRange.max ? 1 : 0) + (filters.minImpact ? 1 : 0) + (filters.minClarity ? 1 : 0)})</span>}
+                  </button>
+                  
+                  {showFilters && (
+                    <div className="filter-dropdown">
+                      <div className="filter-section">
+                        <h4>Sustainable Development Goals (SDGs)</h4>
+                        <div className="sdg-filter-grid">
+                          {getAvailableSDGs().map(sdg => (
+                            <label key={sdg} className="sdg-checkbox">
+                              <input
+                                type="checkbox"
+                                checked={filters.sdgs.includes(sdg)}
+                                onChange={() => handleSDGToggle(sdg)}
+                              />
+                              <span>{sdg}</span>
+                            </label>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="filter-section">
+                        <h4>Year Range</h4>
+                        <div className="year-range-inputs">
+                          <input
+                            type="number"
+                            placeholder="From"
+                            value={filters.yearRange.min}
+                            onChange={(e) => handleFilterChange('yearRange', { ...filters.yearRange, min: e.target.value })}
+                            className="year-input"
+                          />
+                          <span>to</span>
+                          <input
+                            type="number"
+                            placeholder="To"
+                            value={filters.yearRange.max}
+                            onChange={(e) => handleFilterChange('yearRange', { ...filters.yearRange, max: e.target.value })}
+                            className="year-input"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="filter-section">
+                        <h4>Publisher</h4>
+                        <select
+                          value={filters.publisher}
+                          onChange={(e) => handleFilterChange('publisher', e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">All Publishers</option>
+                          {getAvailablePublishers().map(publisher => (
+                            <option key={publisher} value={publisher}>{publisher}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="filter-section">
+                        <h4>Journal</h4>
+                        <select
+                          value={filters.journal}
+                          onChange={(e) => handleFilterChange('journal', e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">All Journals</option>
+                          {getAvailableJournals().map(journal => (
+                            <option key={journal} value={journal}>{journal}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="filter-section">
+                        <h4>Minimum Impact Rating</h4>
+                        <select
+                          value={filters.minImpact}
+                          onChange={(e) => handleFilterChange('minImpact', e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">Any Rating</option>
+                          <option value="1">1+ Stars</option>
+                          <option value="2">2+ Stars</option>
+                          <option value="3">3+ Stars</option>
+                          <option value="4">4+ Stars</option>
+                          <option value="5">5 Stars</option>
+                        </select>
+                      </div>
+
+                      <div className="filter-section">
+                        <h4>Minimum Clarity Rating</h4>
+                        <select
+                          value={filters.minClarity}
+                          onChange={(e) => handleFilterChange('minClarity', e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">Any Rating</option>
+                          <option value="1">1+ Stars</option>
+                          <option value="2">2+ Stars</option>
+                          <option value="3">3+ Stars</option>
+                          <option value="4">4+ Stars</option>
+                          <option value="5">5 Stars</option>
+                        </select>
+                      </div>
+
+                      <div className="filter-actions">
+                        <button onClick={clearFilters} className="clear-filters-btn">
+                          Clear All Filters
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <button 
                   className="filter-btn"
                   onClick={loadPapers}
@@ -248,6 +491,54 @@ const Homepage = () => {
               </div>
             )}
           </div>
+
+          {/* Active Filters Display */}
+          {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max || filters.minImpact || filters.minClarity) && (
+            <div className="active-filters">
+              <div className="active-filters-header">
+                <span>Active Filters:</span>
+                <button onClick={clearFilters} className="clear-all-btn">Clear All</button>
+              </div>
+              <div className="active-filters-list">
+                {filters.sdgs.map(sdg => (
+                  <span key={sdg} className="active-filter">
+                    {sdg}
+                    <button onClick={() => handleSDGToggle(sdg)} className="remove-filter">×</button>
+                  </span>
+                ))}
+                {filters.publisher && (
+                  <span className="active-filter">
+                    Publisher: {filters.publisher}
+                    <button onClick={() => handleFilterChange('publisher', '')} className="remove-filter">×</button>
+                  </span>
+                )}
+                {filters.journal && (
+                  <span className="active-filter">
+                    Journal: {filters.journal}
+                    <button onClick={() => handleFilterChange('journal', '')} className="remove-filter">×</button>
+                  </span>
+                )}
+                {(filters.yearRange.min || filters.yearRange.max) && (
+                  <span className="active-filter">
+                    Year: {filters.yearRange.min || '*'} - {filters.yearRange.max || '*'}
+                    <button onClick={() => handleFilterChange('yearRange', { min: '', max: '' })} className="remove-filter">×</button>
+                  </span>
+                )}
+                {filters.minImpact && (
+                  <span className="active-filter">
+                    Min Impact: {filters.minImpact}+
+                    <button onClick={() => handleFilterChange('minImpact', '')} className="remove-filter">×</button>
+                  </span>
+                )}
+                {filters.minClarity && (
+                  <span className="active-filter">
+                    Min Clarity: {filters.minClarity}+
+                    <button onClick={() => handleFilterChange('minClarity', '')} className="remove-filter">×</button>
+                  </span>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Results and Sort */}
           <div className="results-header">
@@ -298,13 +589,20 @@ const Homepage = () => {
                       ))}
                     </div>
 
-                    <p className="abstract">{paper.abstract}</p>
-
-                    <div className="tags">
+                    <p className="abstract">{paper.abstract}</p>                    <div className="tags">
                       {paper.tags && paper.tags.map((tag, index) => (
                         <span key={index} className="tag">{tag}</span>
                       ))}
                     </div>
+
+                    {paper.sdgs && paper.sdgs.length > 0 && (
+                      <div className="sdgs">
+                        <span className="sdgs-label">SDGs:</span>
+                        {paper.sdgs.map((sdg, index) => (
+                          <span key={index} className="sdg-tag">{sdg}</span>
+                        ))}
+                      </div>
+                    )}
 
                     <div className="paper-stats">
                       <div className="stats-left">
