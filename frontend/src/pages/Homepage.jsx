@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Homepage.css';
+import '../../styles/Homepage.css';
 
 const Homepage = () => {
   const navigate = useNavigate();
@@ -100,10 +100,7 @@ const Homepage = () => {
         <div className="header-content">
           <div className="logo-section">
             <h1>CCS Research</h1>
-          </div>
-          <div className="header-actions">
-            <span className="nav-link">Recent Papers</span>
-            <span className="nav-link">Popular</span>
+          </div>          <div className="header-actions">
             <button 
               className="sign-in-btn"
               onClick={() => navigate('/signin')}
