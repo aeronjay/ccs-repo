@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
 
 const ManagePapers = () => {
+  const navigate = useNavigate();
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -14,15 +16,41 @@ const ManagePapers = () => {
   const [tags, setTags] = useState('');
   const [doi, setDoi] = useState('');
   const [message, setMessage] = useState('');
+  // Get user ID from localStorage - extract from stored user object
+  const getUserId = () => {
+    const user = localStorage.getItem('user');
+    if (user) {
+      try {
+        const userData = JSON.parse(user);
+        return userData.id;
+      } catch (error) {
+        console.error('Error parsing user data from localStorage:', error);
+        return null;
+      }
+    }
+    return null;
+  };
+  const userId = getUserId();
 
-  // Get user ID from localStorage (you might want to use a proper auth context)
-  const userId = localStorage.getItem('userId') || 'demo-user-id';
+  // Check if user is authenticated
+  useEffect(() => {
+    if (!userId) {
+      setMessage('Please log in to access your papers.');
+      navigate('/signin');
+      return;
+    }
+  }, [userId, navigate]);
 
   useEffect(() => {
-    loadPapers();
-  }, []);
-
+    if (userId) {
+      loadPapers();
+    }
+  }, [userId]);
   const loadPapers = async () => {
+    if (!userId) {
+      return;
+    }
+    
     setLoading(true);
     try {
       const userPapers = await paperService.getUserPapers(userId);
@@ -135,10 +163,36 @@ const ManagePapers = () => {
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
-
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1>Manage My Papers</h1>
+      
+      {!userId ? (
+        <div style={{ 
+          padding: '20px', 
+          textAlign: 'center',
+          backgroundColor: '#fff3cd',
+          color: '#856404',
+          borderRadius: '4px',
+          border: '1px solid #ffeaa7'
+        }}>
+          <p>Please log in to access your papers.</p>
+          <button
+            onClick={() => navigate('/signin')}
+            style={{
+              backgroundColor: '#007bff',
+              color: 'white',
+              padding: '10px 20px',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Go to Sign In
+          </button>
+        </div>
+      ) : (
+        <>
       
       {message && (
         <div style={{ 
@@ -370,11 +424,12 @@ const ManagePapers = () => {
                     Delete
                   </button>
                 </div>
-              </div>
-            ))}
+              </div>            ))}
           </div>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 };

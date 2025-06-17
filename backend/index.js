@@ -29,8 +29,8 @@ mongoose.connect(process.env.MONGODB_URI)
   .catch(err => console.error('MongoDB connection error:', err));
 
 // Routes
-// app.use('/api/auth', authRoutes);
-// app.use('/api/papers', papersRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/papers', papersRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend API is running!');
