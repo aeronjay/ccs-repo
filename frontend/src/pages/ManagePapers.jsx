@@ -8,6 +8,9 @@ const ManagePapers = () => {
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showUploadModal, setShowUploadModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedPaper, setSelectedPaper] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
@@ -22,6 +25,7 @@ const ManagePapers = () => {
   const [doi, setDoi] = useState('');
   const [message, setMessage] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  
   // SDG options
   const sdgOptions = [
     { id: 1, name: "No Poverty" },
@@ -73,6 +77,7 @@ const ManagePapers = () => {
       loadPapers();
     }
   }, [userId]);
+
   const loadPapers = async () => {
     if (!userId) {
       return;
@@ -88,6 +93,7 @@ const ManagePapers = () => {
       setLoading(false);
     }
   };
+
   const handleFileSelect = (file) => {
     if (file) {
       // Check file type
@@ -170,6 +176,51 @@ const ManagePapers = () => {
         : [...prev, sdgId]
     );
   };
+
+  const openUploadModal = () => {
+    resetForm();
+    setShowUploadModal(true);
+  };
+
+  const closeUploadModal = () => {
+    setShowUploadModal(false);
+    resetForm();
+  };
+
+  const openEditModal = (paper) => {
+    setSelectedPaper(paper);
+    setTitle(paper.title);
+    setDescription(paper.description || '');
+    setJournal(paper.journal || '');
+    setYear(paper.year || new Date().getFullYear().toString());
+    setPublisher(paper.publisher || '');
+    setAuthorsList(paper.authors || []);
+    setKeywordsList(paper.tags || []);
+    setSelectedSDGs(paper.sdgs || []);
+    setDoi(paper.doi || '');
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setSelectedFile(null);
+    setTitle('');
+    setDescription('');
+    setJournal('');
+    setPublisher('');
+    setYear(new Date().getFullYear().toString());
+    setAuthorsList([]);
+    setKeywordsList([]);
+    setSelectedSDGs([]);
+    setCurrentAuthor('');
+    setCurrentKeyword('');
+    setDoi('');
+    setSelectedPaper(null);
+  };
   const handleUpload = async (event) => {
     event.preventDefault();
     
@@ -181,7 +232,9 @@ const ManagePapers = () => {
     if (authorsList.length === 0) {
       setMessage('Please add at least one author');
       return;
-    }    if (keywordsList.length === 0) {
+    }    
+    
+    if (keywordsList.length === 0) {
       setMessage('Please add at least one keyword');
       return;
     }
@@ -211,24 +264,59 @@ const ManagePapers = () => {
 
       await paperService.upload(selectedFile, userId, title, description, additionalData);
       setMessage('Paper uploaded successfully!');
-      
-      // Reset form
-      setSelectedFile(null);
-      setTitle('');
-      setDescription('');
-      setJournal('');
-      setPublisher('');
-      setYear(new Date().getFullYear().toString());
-      setAuthorsList([]);
-      setKeywordsList([]);
-      setSelectedSDGs([]);
-      setCurrentAuthor('');
-      setCurrentKeyword('');
-      setDoi('');
-      
+      closeUploadModal();
       loadPapers(); // Refresh the list
     } catch (error) {
       setMessage('Upload failed: ' + error.message);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleUpdate = async (event) => {
+    event.preventDefault();
+    
+    if (authorsList.length === 0) {
+      setMessage('Please add at least one author');
+      return;
+    }    
+    
+    if (keywordsList.length === 0) {
+      setMessage('Please add at least one keyword');
+      return;
+    }
+
+    if (!journal.trim()) {
+      setMessage('Please enter a journal name');
+      return;
+    }
+
+    if (selectedSDGs.length === 0) {
+      setMessage('Please select at least one SDG');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      // Prepare updated data
+      const updatedData = {
+        title,
+        description,
+        journal,
+        year,
+        publisher,
+        authors: authorsList,
+        tags: keywordsList,
+        sdgs: selectedSDGs,
+        doi
+      };
+
+      await paperService.updatePaper(selectedPaper.id, userId, updatedData);
+      setMessage('Paper updated successfully!');
+      closeEditModal();
+      loadPapers(); // Refresh the list
+    } catch (error) {
+      setMessage('Update failed: ' + error.message);
     } finally {
       setUploading(false);
     }
@@ -264,6 +352,7 @@ const ManagePapers = () => {
       }
     }
   };
+
   const formatFileSize = (bytes) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -272,12 +361,21 @@ const ManagePapers = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  const formatDate = (dateString) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
+
   const getSDGName = (sdgId) => {
     const sdg = sdgOptions.find(s => s.id === sdgId);
     return sdg ? sdg.name : `SDG ${sdgId}`;
   };
 
-  return (    <div className="manage-papers-container">
+  return (
+    <div className="manage-papers-container">
       <div className="page-header">
         <button
           onClick={() => navigate(-1)}
@@ -285,7 +383,7 @@ const ManagePapers = () => {
         >
           ← Back
         </button>
-        <h1 className="page-title">Upload Research Paper</h1>
+        <h1 className="page-title">Manage My Papers</h1>
       </div>
       
       {!userId ? (
@@ -306,263 +404,16 @@ const ManagePapers = () => {
             </div>
           )}
 
-          {/* Upload Section */}
-          <div className="upload-section">
-            <form onSubmit={handleUpload} className="upload-form">
-              {/* File Upload */}
-              <div className="file-upload-section">
-                <label className="form-label">
-                  Paper File (PDF/DOCX) <span className="required">*</span>
-                </label>
-                <div 
-                  className={`file-drop-zone ${dragOver ? 'drag-over' : ''}`}
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
-                  onClick={() => document.getElementById('fileInput').click()}
-                >
-                  <div className="upload-icon">
-                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                    </svg>
-                  </div>
-                  <div className="upload-text">Upload a file</div>
-                  <div className="upload-subtext">or drag and drop</div>
-                  <div className="file-types">PDF or DOCX up to 10MB</div>
-                </div>
-                <input
-                  id="fileInput"
-                  type="file"
-                  accept=".pdf,.docx,.doc"
-                  onChange={handleFileInputChange}
-                  className="hidden-file-input"
-                />
-                
-                {selectedFile && (
-                  <div className="selected-file">
-                    <div className="file-icon">
-                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                      </svg>
-                    </div>
-                    <div className="file-info">
-                      <div className="file-name">{selectedFile.name}</div>
-                      <div className="file-size">{formatFileSize(selectedFile.size)}</div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={removeSelectedFile}
-                      className="remove-file"
-                    >
-                      ✕
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Title */}
-              <div className="form-group">
-                <label className="form-label">
-                  Title <span className="required">*</span>
-                </label>
-                <input
-                  type="text"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="form-input"
-                  placeholder="Enter paper title"
-                  required
-                />
-              </div>
-
-              {/* Description */}
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="form-textarea"
-                  placeholder="Enter paper description or abstract"
-                  rows={4}
-                />
-              </div>
-
-              {/* SDG Selection */}
-              <div className="sdg-section">
-                <label className="form-label">
-                  Sustainable Development Goals (SDGs) <span className="required">*</span>
-                </label>
-                <div className="form-label" style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>
-                  Hold Ctrl (Windows) or Command (Mac) to select multiple SDGs
-                </div>
-                <div className="sdg-grid">
-                  {sdgOptions.map((sdg) => (
-                    <div
-                      key={sdg.id}
-                      className={`sdg-item ${selectedSDGs.includes(sdg.id) ? 'selected' : ''}`}
-                      onClick={() => handleSDGChange(sdg.id)}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedSDGs.includes(sdg.id)}
-                        onChange={() => {}} // Handled by onClick
-                        className="sdg-checkbox"
-                      />
-                      <span className="sdg-text">{sdg.id}: {sdg.name}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Authors and Keywords */}
-              <div className="multi-input-section">
-                <div className="dynamic-input-group">
-                  <label className="form-label">
-                    Authors <span className="required">*</span>
-                  </label>
-                  <div className="input-with-button">
-                    <input
-                      type="text"
-                      value={currentAuthor}
-                      onChange={(e) => setCurrentAuthor(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAuthor())}
-                      className="form-input"
-                      placeholder="Author name"
-                    />
-                    <button
-                      type="button"
-                      onClick={addAuthor}
-                      className="add-button"
-                    >
-                      + Add Author
-                    </button>
-                  </div>
-                  <div className="tag-list">
-                    {authorsList.map((author, index) => (
-                      <div key={index} className="tag-item">
-                        {author}
-                        <button
-                          type="button"
-                          onClick={() => removeAuthor(index)}
-                          className="remove-tag"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="dynamic-input-group">
-                  <label className="form-label">
-                    Keywords <span className="required">*</span>
-                  </label>
-                  <div className="input-with-button">
-                    <input
-                      type="text"
-                      value={currentKeyword}
-                      onChange={(e) => setCurrentKeyword(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                      className="form-input"
-                      placeholder="Keyword"
-                    />
-                    <button
-                      type="button"
-                      onClick={addKeyword}
-                      className="add-button"
-                    >
-                      + Add Keyword
-                    </button>
-                  </div>
-                  <div className="tag-list">
-                    {keywordsList.map((keyword, index) => (
-                      <div key={index} className="tag-item">
-                        {keyword}
-                        <button
-                          type="button"
-                          onClick={() => removeKeyword(index)}
-                          className="remove-tag"
-                        >
-                          ×
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Journal, Publisher, Year, and DOI */}
-              <div className="multi-input-section">
-                <div className="form-group">
-                  <label className="form-label">
-                    Journal <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={journal}
-                    onChange={(e) => setJournal(e.target.value)}
-                    className="form-input"
-                    placeholder="e.g., IEEE Transactions on Neural Networks"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Publisher</label>
-                  <input
-                    type="text"
-                    value={publisher}
-                    onChange={(e) => setPublisher(e.target.value)}
-                    className="form-input"
-                    placeholder="e.g., IEEE, ACM, Springer"
-                  />
-                </div>
-              </div>
-
-              <div className="multi-input-section">
-                <div className="form-group">
-                  <label className="form-label">
-                    Year <span className="required">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={year}
-                    onChange={(e) => setYear(e.target.value)}
-                    className="form-input"
-                    placeholder="2025"
-                    required
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">DOI</label>
-                  <input
-                    type="text"
-                    value={doi}
-                    onChange={(e) => setDoi(e.target.value)}
-                    className="form-input"
-                    placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
-                  />
-                </div>
-              </div>
-
-              {/* Form Actions */}
-              <div className="form-actions">                <button
-                  type="submit"
-                  disabled={uploading || !selectedFile || !title || !journal || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
-                  className="upload-button"
-                >
-                  {uploading ? 'Uploading...' : 'Upload Paper'}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          {/* Papers List */}
-          <div className="papers-section">
-            <div className="papers-header">
-              <h2 className="section-title">My Papers</h2>
-              <span className="papers-count">({papers.length})</span>
+          {/* Table Section */}
+          <div className="papers-table-section">
+            <div className="section-header">
+              <h2 className="section-title">My Research Papers</h2>
+              <button
+                onClick={openUploadModal}
+                className="upload-button"
+              >
+                + Upload New Paper
+              </button>
             </div>
             
             {loading ? (
@@ -570,81 +421,580 @@ const ManagePapers = () => {
             ) : papers.length === 0 ? (
               <div className="empty-state">
                 <div className="empty-state-title">No papers uploaded yet</div>
-                <div className="empty-state-text">Upload your first paper above!</div>
+                <div className="empty-state-text">Upload your first paper using the button above!</div>
               </div>
             ) : (
-              <div className="papers-grid">
-                {papers.map((paper) => (
-                  <div key={paper.id} className="paper-card">
-                    <h3 className="paper-title">{paper.title}</h3>
-                    
-                    {paper.journal && (
-                      <div className="paper-meta">
-                        <strong>Journal:</strong> {paper.journal} {paper.year && `• ${paper.year}`}
-                      </div>
-                    )}
-                    
-                    {paper.authors && paper.authors.length > 0 && (
-                      <div className="paper-meta">
-                        <strong>Authors:</strong> {paper.authors.join(', ')}
-                      </div>
-                    )}
-                    
-                    {paper.doi && (
-                      <div className="paper-meta">
-                        <strong>DOI:</strong> {paper.doi}
-                      </div>
-                    )}
-                    
-                    {paper.description && (
-                      <p className="paper-description">{paper.description}</p>
-                    )}
-                    
-                    {paper.tags && paper.tags.length > 0 && (
-                      <div className="paper-tags">
-                        {paper.tags.map((tag, index) => (
-                          <span key={index} className="paper-tag">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {paper.sdgs && paper.sdgs.length > 0 && (
-                      <div className="paper-sdgs">
-                        {paper.sdgs.map((sdgId, index) => (
-                          <span key={index} className="paper-sdg">
-                            SDG {sdgId}: {getSDGName(sdgId)}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                    
-                    <div className="paper-meta">
-                      <strong>File:</strong> {paper.filename} | 
-                      <strong> Size:</strong> {formatFileSize(paper.size)} | 
-                      <strong> Uploaded:</strong> {new Date(paper.uploadDate).toLocaleDateString()}
-                    </div>
-                    
-                    <div className="paper-actions">
-                      <button
-                        onClick={() => handleDownload(paper)}
-                        className="action-button download-button"
-                      >
-                        Download
-                      </button>
-                      <button
-                        onClick={() => handleDelete(paper)}
-                        className="action-button delete-button"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="papers-table-container">
+                <table className="papers-table">
+                  <thead>
+                    <tr>
+                      <th>Title</th>
+                      <th>Journal / Year</th>
+                      <th>Authors</th>
+                      <th>File Details</th>
+                      <th>Upload Date</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {papers.map((paper) => (
+                      <tr key={paper.id} className="paper-row">
+                        <td className="paper-title-cell">
+                          <div className="paper-title">{paper.title}</div>
+                          {paper.tags && paper.tags.length > 0 && (
+                            <div className="paper-tags">
+                              {paper.tags.map((tag, index) => (
+                                <span key={index} className="paper-tag">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </td>
+                        <td>
+                          {paper.journal || 'N/A'}
+                          <br />
+                          {paper.year || 'N/A'}
+                        </td>
+                        <td>
+                          {paper.authors ? paper.authors.join(', ') : 'No authors listed'}
+                        </td>
+                        <td>
+                          <div>{paper.filename}</div>
+                          <div className="file-size">{formatFileSize(paper.size)}</div>
+                        </td>
+                        <td>
+                          {formatDate(paper.uploadDate)}
+                        </td>
+                        <td className="actions-cell">
+                          <button
+                            onClick={() => handleDownload(paper)}
+                            className="action-button download-button"
+                            title="Download Paper"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                              <polyline points="7 10 12 15 17 10"></polyline>
+                              <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => openEditModal(paper)}
+                            className="action-button edit-button"
+                            title="Edit Paper"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                            </svg>
+                          </button>
+                          <button
+                            onClick={() => handleDelete(paper)}
+                            className="action-button delete-button"
+                            title="Delete Paper"
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                              <line x1="10" y1="11" x2="10" y2="17"></line>
+                              <line x1="14" y1="11" x2="14" y2="17"></line>
+                            </svg>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>
+
+          {/* Upload Modal */}
+          {showUploadModal && (
+            <div className="modal-overlay">
+              <div className="modal-container">
+                <div className="modal-header">
+                  <h2>Upload New Research Paper</h2>
+                  <button className="close-button" onClick={closeUploadModal}>×</button>
+                </div>
+                
+                <form onSubmit={handleUpload} className="upload-form">
+                  {/* File Upload */}
+                  <div className="file-upload-section">
+                    <label className="form-label">
+                      Paper File (PDF/DOCX) <span className="required">*</span>
+                    </label>
+                    <div 
+                      className={`file-drop-zone ${dragOver ? 'drag-over' : ''}`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => document.getElementById('fileInput').click()}
+                    >
+                      <div className="upload-icon">
+                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                        </svg>
+                      </div>
+                      <div className="upload-text">Upload a file</div>
+                      <div className="upload-subtext">or drag and drop</div>
+                      <div className="file-types">PDF or DOCX up to 10MB</div>
+                    </div>
+                    <input
+                      id="fileInput"
+                      type="file"
+                      accept=".pdf,.docx,.doc"
+                      onChange={handleFileInputChange}
+                      className="hidden-file-input"
+                    />
+                    
+                    {selectedFile && (
+                      <div className="selected-file">
+                        <div className="file-icon">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div className="file-info">
+                          <div className="file-name">{selectedFile.name}</div>
+                          <div className="file-size">{formatFileSize(selectedFile.size)}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeSelectedFile}
+                          className="remove-file"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Title */}
+                  <div className="form-group">
+                    <label className="form-label">
+                      Title <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="form-input"
+                      placeholder="Enter paper title"
+                      required
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="form-group">
+                    <label className="form-label">Description</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="form-textarea"
+                      placeholder="Enter paper description or abstract"
+                      rows={4}
+                    />
+                  </div>
+
+                  {/* SDG Selection */}
+                  <div className="sdg-section">
+                    <label className="form-label">
+                      Sustainable Development Goals (SDGs) <span className="required">*</span>
+                    </label>
+                    <div className="form-label" style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>
+                      Hold Ctrl (Windows) or Command (Mac) to select multiple SDGs
+                    </div>
+                    <div className="sdg-grid">
+                      {sdgOptions.map((sdg) => (
+                        <div
+                          key={sdg.id}
+                          className={`sdg-item ${selectedSDGs.includes(sdg.id) ? 'selected' : ''}`}
+                          onClick={() => handleSDGChange(sdg.id)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedSDGs.includes(sdg.id)}
+                            onChange={() => {}} // Handled by onClick
+                            className="sdg-checkbox"
+                          />
+                          <span className="sdg-text">{sdg.id}: {sdg.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Authors and Keywords */}
+                  <div className="multi-input-section">
+                    <div className="dynamic-input-group">
+                      <label className="form-label">
+                        Authors <span className="required">*</span>
+                      </label>
+                      <div className="input-with-button">
+                        <input
+                          type="text"
+                          value={currentAuthor}
+                          onChange={(e) => setCurrentAuthor(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAuthor())}
+                          className="form-input"
+                          placeholder="Author name"
+                        />
+                        <button
+                          type="button"
+                          onClick={addAuthor}
+                          className="add-button"
+                        >
+                          + Add Author
+                        </button>
+                      </div>
+                      <div className="tag-list">
+                        {authorsList.map((author, index) => (
+                          <div key={index} className="tag-item">
+                            {author}
+                            <button
+                              type="button"
+                              onClick={() => removeAuthor(index)}
+                              className="remove-tag"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="dynamic-input-group">
+                      <label className="form-label">
+                        Keywords <span className="required">*</span>
+                      </label>
+                      <div className="input-with-button">
+                        <input
+                          type="text"
+                          value={currentKeyword}
+                          onChange={(e) => setCurrentKeyword(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                          className="form-input"
+                          placeholder="Keyword"
+                        />
+                        <button
+                          type="button"
+                          onClick={addKeyword}
+                          className="add-button"
+                        >
+                          + Add Keyword
+                        </button>
+                      </div>
+                      <div className="tag-list">
+                        {keywordsList.map((keyword, index) => (
+                          <div key={index} className="tag-item">
+                            {keyword}
+                            <button
+                              type="button"
+                              onClick={() => removeKeyword(index)}
+                              className="remove-tag"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Journal, Publisher, Year, and DOI */}
+                  <div className="multi-input-section">
+                    <div className="form-group">
+                      <label className="form-label">
+                        Journal <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={journal}
+                        onChange={(e) => setJournal(e.target.value)}
+                        className="form-input"
+                        placeholder="e.g., IEEE Transactions on Neural Networks"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Publisher</label>
+                      <input
+                        type="text"
+                        value={publisher}
+                        onChange={(e) => setPublisher(e.target.value)}
+                        className="form-input"
+                        placeholder="e.g., IEEE, ACM, Springer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="multi-input-section">
+                    <div className="form-group">
+                      <label className="form-label">
+                        Year <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                        className="form-input"
+                        placeholder="2025"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">DOI</label>
+                      <input
+                        type="text"
+                        value={doi}
+                        onChange={(e) => setDoi(e.target.value)}
+                        className="form-input"
+                        placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      onClick={closeUploadModal}
+                      className="cancel-button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={uploading || !selectedFile || !title || !journal || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
+                      className="upload-button"
+                    >
+                      {uploading ? 'Uploading...' : 'Upload Paper'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Edit Modal */}
+          {showEditModal && selectedPaper && (
+            <div className="modal-overlay">
+              <div className="modal-container">
+                <div className="modal-header">
+                  <h2>Edit Research Paper</h2>
+                  <button className="close-button" onClick={closeEditModal}>×</button>
+                </div>
+                
+                <form onSubmit={handleUpdate} className="upload-form">
+                  {/* Title */}
+                  <div className="form-group">
+                    <label className="form-label">
+                      Title <span className="required">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                      className="form-input"
+                      placeholder="Enter paper title"
+                      required
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="form-group">
+                    <label className="form-label">Description</label>
+                    <textarea
+                      value={description}
+                      onChange={(e) => setDescription(e.target.value)}
+                      className="form-textarea"
+                      placeholder="Enter paper description or abstract"
+                      rows={4}
+                    />
+                  </div>
+
+                  {/* SDG Selection */}
+                  <div className="sdg-section">
+                    <label className="form-label">
+                      Sustainable Development Goals (SDGs) <span className="required">*</span>
+                    </label>
+                    <div className="form-label" style={{ fontSize: '12px', color: '#666', fontWeight: 'normal' }}>
+                      Hold Ctrl (Windows) or Command (Mac) to select multiple SDGs
+                    </div>
+                    <div className="sdg-grid">
+                      {sdgOptions.map((sdg) => (
+                        <div
+                          key={sdg.id}
+                          className={`sdg-item ${selectedSDGs.includes(sdg.id) ? 'selected' : ''}`}
+                          onClick={() => handleSDGChange(sdg.id)}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedSDGs.includes(sdg.id)}
+                            onChange={() => {}} // Handled by onClick
+                            className="sdg-checkbox"
+                          />
+                          <span className="sdg-text">{sdg.id}: {sdg.name}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Authors and Keywords */}
+                  <div className="multi-input-section">
+                    <div className="dynamic-input-group">
+                      <label className="form-label">
+                        Authors <span className="required">*</span>
+                      </label>
+                      <div className="input-with-button">
+                        <input
+                          type="text"
+                          value={currentAuthor}
+                          onChange={(e) => setCurrentAuthor(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAuthor())}
+                          className="form-input"
+                          placeholder="Author name"
+                        />
+                        <button
+                          type="button"
+                          onClick={addAuthor}
+                          className="add-button"
+                        >
+                          + Add Author
+                        </button>
+                      </div>
+                      <div className="tag-list">
+                        {authorsList.map((author, index) => (
+                          <div key={index} className="tag-item">
+                            {author}
+                            <button
+                              type="button"
+                              onClick={() => removeAuthor(index)}
+                              className="remove-tag"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="dynamic-input-group">
+                      <label className="form-label">
+                        Keywords <span className="required">*</span>
+                      </label>
+                      <div className="input-with-button">
+                        <input
+                          type="text"
+                          value={currentKeyword}
+                          onChange={(e) => setCurrentKeyword(e.target.value)}
+                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                          className="form-input"
+                          placeholder="Keyword"
+                        />
+                        <button
+                          type="button"
+                          onClick={addKeyword}
+                          className="add-button"
+                        >
+                          + Add Keyword
+                        </button>
+                      </div>
+                      <div className="tag-list">
+                        {keywordsList.map((keyword, index) => (
+                          <div key={index} className="tag-item">
+                            {keyword}
+                            <button
+                              type="button"
+                              onClick={() => removeKeyword(index)}
+                              className="remove-tag"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Journal, Publisher, Year, and DOI */}
+                  <div className="multi-input-section">
+                    <div className="form-group">
+                      <label className="form-label">
+                        Journal <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={journal}
+                        onChange={(e) => setJournal(e.target.value)}
+                        className="form-input"
+                        placeholder="e.g., IEEE Transactions on Neural Networks"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">Publisher</label>
+                      <input
+                        type="text"
+                        value={publisher}
+                        onChange={(e) => setPublisher(e.target.value)}
+                        className="form-input"
+                        placeholder="e.g., IEEE, ACM, Springer"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="multi-input-section">
+                    <div className="form-group">
+                      <label className="form-label">
+                        Year <span className="required">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={year}
+                        onChange={(e) => setYear(e.target.value)}
+                        className="form-input"
+                        placeholder="2025"
+                        required
+                      />
+                    </div>
+
+                    <div className="form-group">
+                      <label className="form-label">DOI</label>
+                      <input
+                        type="text"
+                        value={doi}
+                        onChange={(e) => setDoi(e.target.value)}
+                        className="form-input"
+                        placeholder="e.g., 10.1000/182"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Form Actions */}
+                  <div className="form-actions">
+                    <button
+                      type="button"
+                      onClick={closeEditModal}
+                      className="cancel-button"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={uploading || !title || !journal || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
+                      className="upload-button"
+                    >
+                      {uploading ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </>
       )}
     </div>

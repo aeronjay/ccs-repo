@@ -210,6 +210,54 @@ router.delete('/:fileId', async (req, res) => {
   }
 });
 
+// Update paper metadata
+router.put('/:fileId', async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const { userId, title, description, journal, year, publisher, authors, tags, sdgs, doi } = req.body;
+
+    // Find the file first to check ownership
+    const files = await gfs.find({ _id: new mongoose.Types.ObjectId(fileId) }).toArray();
+    
+    if (!files || files.length === 0) {
+      return res.status(404).json({ message: 'File not found' });
+    }
+
+    const file = files[0];
+
+    // Check if user owns the file
+    if (file.metadata.userId !== userId) {
+      return res.status(403).json({ message: 'Access denied' });
+    }
+
+    // Update metadata in MongoDB directly
+    await mongoose.connection.db.collection('papers.files').updateOne(
+      { _id: new mongoose.Types.ObjectId(fileId) },
+      { 
+        $set: { 
+          'metadata.title': title || file.metadata.title,
+          'metadata.description': description || file.metadata.description,
+          'metadata.journal': journal || file.metadata.journal,
+          'metadata.year': year || file.metadata.year,
+          'metadata.publisher': publisher || file.metadata.publisher,
+          'metadata.authors': authors || file.metadata.authors,
+          'metadata.tags': tags || file.metadata.tags,
+          'metadata.sdgs': sdgs || file.metadata.sdgs,
+          'metadata.doi': doi || file.metadata.doi
+        } 
+      }
+    );
+    
+    res.json({ 
+      message: 'File updated successfully',
+      fileId: fileId
+    });
+
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Get all papers for public display (homepage)
 router.get('/public', async (req, res) => {
   try {

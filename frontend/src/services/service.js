@@ -188,6 +188,19 @@ export const paperService = {
     }
   },
 
+  // Update paper (for users)
+  updatePaper: async (paperId, userId, paperData) => {
+    try {
+      const response = await api.put(`/papers/${paperId}`, {
+        userId,
+        ...paperData
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update paper' };
+    }
+  },
+  
   // Admin functions
   // Delete paper (admin only)
   adminDeletePaper: async (paperId) => {
