@@ -23,7 +23,6 @@ const Homepage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('Date');
   const [user, setUser] = useState(null);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [papers, setPapers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -38,7 +37,6 @@ const Homepage = () => {
     minImpact: '',
     minClarity: ''
   });
-  const userMenuRef = useRef(null);
   const filtersRef = useRef(null);
 
   // Check if user is logged in when component mounts
@@ -71,12 +69,9 @@ const Homepage = () => {
       setLoading(false);
     }
   };
-  // Close user menu when clicking outside
+  // Close filters when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target)) {
-        setShowUserMenu(false);
-      }
       if (filtersRef.current && !filtersRef.current.contains(event.target)) {
         setShowFilters(false);
       }
@@ -90,7 +85,6 @@ const Homepage = () => {
   const handleLogout = () => {
     localStorage.removeItem('user');
     setUser(null);
-    setShowUserMenu(false);
   };
 
   const handleFilterChange = (filterType, value) => {
@@ -170,39 +164,6 @@ const Homepage = () => {
       }
     });
     return Array.from(journals).sort();
-  };const handleUserMenuClick = (action) => {
-    setShowUserMenu(false);
-    switch (action) {
-      case 'manage-papers':
-        navigate('/manage-papers');
-        break;
-      case 'settings':
-        navigate('/settings');
-        break;
-      case 'admin-dashboard':
-        navigate('/admin/dashboard');
-        break;
-      case 'admin-manage-papers':
-        navigate('/admin/manage-papers');
-        break;
-      case 'admin-manage-users':
-        navigate('/admin/manage-users');
-        break;
-      case 'admin-pending-approvals':
-        navigate('/admin/pending-approvals');
-        break;
-      case 'admin-messages':
-        navigate('/admin/messages');
-        break;
-      case 'admin-settings':
-        navigate('/admin/settings');
-        break;
-      case 'logout':
-        handleLogout();
-        break;
-      default:
-        break;
-    }
   };
 
   const handlePaperTitleClick = (paperId) => {
@@ -309,64 +270,73 @@ const Homepage = () => {
           <div className="logo-section">
             <h1>CCS Research</h1>
           </div>
-          <div className="header-actions">            {user ? (
-              <div className="user-menu-container" ref={userMenuRef}>
-                <button 
-                  className="user-icon"
-                  onClick={() => setShowUserMenu(!showUserMenu)}
-                >
-                  <FiUser size={16} /> {user.email}
-                </button>{showUserMenu && (
-                  <div className="user-dropdown">
-                    <div className="user-info">
-                      <span className="user-email">{user.email}</span>
-                      <span className="user-role">{user.role}</span>
-                    </div>
-                    <div className="dropdown-divider"></div>
-                    {user.role === 'user' ? (
-                      <>
-                        <button onClick={() => handleUserMenuClick('manage-papers')}>
-                          <FiFileText size={16} /> Manage My Papers
-                        </button>
-                        <button onClick={() => handleUserMenuClick('settings')}>
-                          <FiSettings size={16} /> Settings
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <button onClick={() => handleUserMenuClick('admin-dashboard')}>
-                          <FiBarChart2 size={16} />
-                          Admin Dashboard
-                        </button>
-                        <button onClick={() => handleUserMenuClick('admin-pending-approvals')}>
-                          <FiClock size={16} />
-                          Pending Approvals
-                        </button>
-                        <button onClick={() => handleUserMenuClick('admin-manage-papers')}>
-                          <FiFileText size={16} />
-                          Manage Papers
-                        </button>
-                        <button onClick={() => handleUserMenuClick('admin-manage-users')}>
-                          <FiUsers size={16} />
-                          Manage Users
-                        </button>
-                        <button onClick={() => handleUserMenuClick('admin-messages')}>
-                          <FiMessageSquare size={16} />
-                          Messages
-                        </button>
-                        <button onClick={() => handleUserMenuClick('admin-settings')}>
-                          <FiSettings size={16} />
-                          Settings
-                        </button>
-                      </>
-                    )}
-                    <div className="dropdown-divider"></div>
-                    <button onClick={() => handleUserMenuClick('logout')} className="logout-btn">
-                      <FiLogOut size={16} />
-                      Logout
+          <div className="header-actions">
+            {user ? (
+              <div className="nav-links">
+                {user.role === 'user' ? (
+                  <>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/manage-papers')}
+                    >
+                      <FiFileText size={16} /> My Papers
                     </button>
-                  </div>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/settings')}
+                    >
+                      <FiSettings size={16} /> Settings
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/admin/dashboard')}
+                    >
+                      <FiBarChart2 size={16} /> Dashboard
+                    </button>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/admin/pending-approvals')}
+                    >
+                      <FiClock size={16} /> Approvals
+                    </button>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/admin/manage-papers')}
+                    >
+                      <FiFileText size={16} /> Papers
+                    </button>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/admin/manage-users')}
+                    >
+                      <FiUsers size={16} /> Users
+                    </button>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/admin/messages')}
+                    >
+                      <FiMessageSquare size={16} /> Messages
+                    </button>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/admin/settings')}
+                    >
+                      <FiSettings size={16} /> Settings
+                    </button>
+                  </>
                 )}
+                <div className="user-info-nav">
+                  <span className="user-email-display"><FiUser size={16} /> {user.email}</span>
+                  <button 
+                    className="logout-nav-btn" 
+                    onClick={handleLogout}
+                  >
+                    <FiLogOut size={16} /> Logout
+                  </button>
+                </div>
               </div>
             ) : (
               <button 
