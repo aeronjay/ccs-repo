@@ -340,7 +340,7 @@ const AdminManageUsers = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .admin-manage-users {
           max-width: 1400px;
         }

@@ -216,7 +216,7 @@ const AdminPendingApprovals = () => {
         </div>
       </div>
 
-      <style jsx>{`
+      <style>{`
         .admin-pending-approvals {
           max-width: 1200px;
         }
