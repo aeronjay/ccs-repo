@@ -12,7 +12,8 @@ const Register = () => {
     password: '',
     confirmPassword: '',
     department: '',
-    studentId: ''
+    studentId: '',
+    phoneNumber: ''
   });
   const [emailVerification, setEmailVerification] = useState({
     isEmailSent: false,
@@ -134,7 +135,7 @@ const Register = () => {
   };
 
   const validateForm = () => {
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.department || !formData.phoneNumber) {
       return 'Please fill in all required fields';
     }
 
@@ -155,6 +156,10 @@ const Register = () => {
       return 'Please enter a valid email address';
     }
 
+    if (!/^[0-9+\-\s()]{10,15}$/.test(formData.phoneNumber)) {
+      return 'Please enter a valid phone number';
+    }
+
     return null;
   };
 
@@ -171,7 +176,15 @@ const Register = () => {
     }
 
     try {
-      const response = await authService.register(formData.email, formData.password);
+      const response = await authService.register(
+        formData.email, 
+        formData.password,
+        formData.firstName,
+        formData.lastName,
+        formData.phoneNumber,
+        formData.department,
+        formData.studentId
+      );
       
       // Show success message with approval info
       alert('Registration successful! Your account is pending approval. You will receive an email notification once an administrator approves your account.');
@@ -272,14 +285,32 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="department">Department</label>
-            <input
-              type="text"
+            <label htmlFor="department">Department *</label>
+            <select
               id="department"
               name="department"
               value={formData.department}
               onChange={handleChange}
-              placeholder="e.g., Computer Science, Information Technology"
+              className="form-select"
+              required
+            >
+              <option value="" disabled>Select your department</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Faculty">Faculty</option>
+            </select>
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phoneNumber">Phone Number *</label>
+            <input
+              type="tel"
+              id="phoneNumber"
+              name="phoneNumber"
+              value={formData.phoneNumber}
+              onChange={handleChange}
+              placeholder="Enter your phone number"
+              required
             />
           </div>
 

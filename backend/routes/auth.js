@@ -137,10 +137,22 @@ router.post('/verify-otp', async (req, res) => {
 // Register/Sign Up route
 router.post('/register', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, firstName, lastName, phoneNumber, department, studentId } = req.body;
 
-    if (!email || !password) {
-      return res.status(400).json({ message: 'Email and password are required' });
+    if (!email || !password || !firstName || !lastName || !phoneNumber || !department) {
+      return res.status(400).json({ message: 'Required fields are missing' });
+    }
+
+    // Validate phone number format
+    const phoneRegex = /^[0-9+\-\s()]{10,15}$/;
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({ message: 'Invalid phone number format' });
+    }
+
+    // Validate department is one of the allowed values
+    const allowedDepartments = ['Computer Science', 'Information Technology', 'Faculty'];
+    if (!allowedDepartments.includes(department)) {
+      return res.status(400).json({ message: 'Invalid department selection' });
     }
 
     // Clean up expired OTPs
@@ -161,7 +173,12 @@ router.post('/register', async (req, res) => {
     // Create new user with default 'user' role and 'pending' status
     const user = new User({ 
       email, 
-      password, 
+      password,
+      firstName,
+      lastName,
+      phoneNumber,
+      department,
+      studentId, 
       role: 'user', // Always default to 'user' role
       status: 'pending' // Require admin approval
     });

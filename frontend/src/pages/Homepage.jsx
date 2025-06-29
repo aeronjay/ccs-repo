@@ -264,7 +264,7 @@ const Homepage = () => {
   };
 
   return (
-    <div className="homepage">      {/* Header */}
+    <div className="homepage">
       <header className="header">
         <div className="header-content">
           <div className="logo-section">

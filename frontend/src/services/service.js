@@ -32,9 +32,17 @@ export const authService = {
   },
 
   // Register/Sign up
-  register: async (email, password) => {
+  register: async (email, password, firstName, lastName, phoneNumber, department, studentId) => {
     try {
-      const response = await api.post('/auth/register', { email, password });
+      const response = await api.post('/auth/register', { 
+        email, 
+        password, 
+        firstName, 
+        lastName, 
+        phoneNumber, 
+        department, 
+        studentId 
+      });
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Registration failed' };
