@@ -11,6 +11,26 @@ const api = axios.create({
 
 // Authentication services
 export const authService = {
+  // Send OTP for email verification
+  sendOTP: async (email) => {
+    try {
+      const response = await api.post('/auth/send-otp', { email });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to send OTP' };
+    }
+  },
+
+  // Verify OTP
+  verifyOTP: async (email, otp) => {
+    try {
+      const response = await api.post('/auth/verify-otp', { email, otp });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'OTP verification failed' };
+    }
+  },
+
   // Register/Sign up
   register: async (email, password) => {
     try {
@@ -239,6 +259,26 @@ export const userService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch user statistics' };
+    }
+  },
+
+  // Get pending users (admin only)
+  getPendingUsers: async () => {
+    try {
+      const response = await api.get('/auth/admin/users/pending');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch pending users' };
+    }
+  },
+
+  // Update user status (admin only)
+  updateUserStatus: async (userId, status) => {
+    try {
+      const response = await api.put(`/auth/admin/users/${userId}/status`, { status });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to update user status' };
     }
   }
 };

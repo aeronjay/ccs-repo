@@ -1,6 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AdminLayout from '../../components/AdminLayout';
 import { userService } from '../../services/service';
+import { 
+  FiUsers, 
+  FiClock, 
+  FiCheckCircle, 
+  FiAward,
+  FiRefreshCw,
+  FiUser,
+  FiTrash2,
+  FiInfo
+} from 'react-icons/fi';
 
 const AdminManageUsers = () => {
   const navigate = useNavigate();
@@ -9,32 +20,10 @@ const AdminManageUsers = () => {
   const [stats, setStats] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
   const [message, setMessage] = useState('');
-
-  // Check if user is admin
-  const checkAdminAccess = () => {
-    const user = localStorage.getItem('user');
-    if (!user) {
-      navigate('/signin');
-      return false;
-    }
-    
-    try {
-      const userData = JSON.parse(user);
-      if (userData.role !== 'admin') {
-        navigate('/');
-        return false;
-      }
-      return true;
-    } catch (error) {
-      navigate('/signin');
-      return false;
-    }
-  };
+  const [filterStatus, setFilterStatus] = useState('all');
 
   // Load all users and statistics
   const loadData = async () => {
-    if (!checkAdminAccess()) return;
-    
     setLoading(true);
     try {
       const [usersData, statsData] = await Promise.all([
@@ -55,11 +44,19 @@ const AdminManageUsers = () => {
     loadData();
   }, []);
 
-  // Filter users based on search term
-  const filteredUsers = users.filter(user =>
-    user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    user.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter users based on search term and status
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         user.role.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesStatus = filterStatus === 'all' || 
+                         (filterStatus === 'pending' && user.status === 'pending') ||
+                         (filterStatus === 'approved' && user.status === 'approved') ||
+                         (filterStatus === 'rejected' && user.status === 'rejected') ||
+                         (filterStatus === 'admin' && user.role === 'admin');
+    
+    return matchesSearch && matchesStatus;
+  });
 
   // Handle role change
   const handleRoleChange = async (userId, newRole) => {
@@ -71,8 +68,27 @@ const AdminManageUsers = () => {
       await userService.updateUserRole(userId, newRole);
       setMessage('User role updated successfully');
       loadData(); // Reload data
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage('Error updating user role: ' + error.message);
+      setTimeout(() => setMessage(''), 5000);
+    }
+  };
+
+  // Handle status change
+  const handleStatusChange = async (userId, newStatus) => {
+    if (!window.confirm(`Are you sure you want to change this user's status to ${newStatus}?`)) {
+      return;
+    }
+
+    try {
+      await userService.updateUserStatus(userId, newStatus);
+      setMessage(`User ${newStatus} successfully`);
+      loadData(); // Reload data
+      setTimeout(() => setMessage(''), 3000);
+    } catch (error) {
+      setMessage('Error updating user status: ' + error.message);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
@@ -83,6 +99,7 @@ const AdminManageUsers = () => {
     // Prevent admin from deleting themselves
     if (currentUser.id === userId) {
       setMessage('Error: You cannot delete your own account');
+      setTimeout(() => setMessage(''), 5000);
       return;
     }
 
@@ -94,165 +111,364 @@ const AdminManageUsers = () => {
       await userService.deleteUser(userId);
       setMessage('User deleted successfully');
       loadData(); // Reload data
+      setTimeout(() => setMessage(''), 3000);
     } catch (error) {
       setMessage('Error deleting user: ' + error.message);
+      setTimeout(() => setMessage(''), 5000);
     }
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString();
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  if (loading) {
-    return (
-      <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-        <div className="loading">Loading users...</div>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
-      <div style={{ marginBottom: '20px' }}>
-        <button onClick={() => navigate('/')} style={{ marginBottom: '10px', padding: '8px 16px', backgroundColor: '#007bff', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}>
-          ← Back to Homepage
-        </button>
-        <h1>Admin - Manage Users</h1>
-        
-        {/* Statistics */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '15px', marginBottom: '20px' }}>
-          <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#495057' }}>Total Users</h3>
-            <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#007bff' }}>{stats.totalUsers || 0}</p>
-          </div>
-          <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#495057' }}>Admin Users</h3>
-            <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#dc3545' }}>{stats.adminUsers || 0}</p>
-          </div>
-          <div style={{ backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            <h3 style={{ margin: '0 0 10px 0', color: '#495057' }}>Regular Users</h3>
-            <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#28a745' }}>{stats.regularUsers || 0}</p>
-          </div>
-        </div>
-
-        {/* Recent Users */}
-        {stats.recentUsers && stats.recentUsers.length > 0 && (
-          <div style={{ marginBottom: '20px', backgroundColor: '#f8f9fa', padding: '15px', borderRadius: '8px', border: '1px solid #dee2e6' }}>
-            <h3 style={{ margin: '0 0 15px 0', color: '#495057' }}>Recent Registrations</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px' }}>
-              {stats.recentUsers.map(user => (
-                <div key={user._id} style={{ backgroundColor: 'white', padding: '8px 12px', borderRadius: '4px', fontSize: '14px' }}>
-                  {user.email} ({user.role}) - {formatDate(user.createdAt)}
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Search */}
-        <div style={{ marginBottom: '20px' }}>
-          <input
-            type="text"
-            placeholder="Search users by email or role..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            style={{ width: '100%', padding: '10px', fontSize: '16px', border: '1px solid #ddd', borderRadius: '4px' }}
-          />
+    <AdminLayout>
+      <div className="admin-manage-users">
+        <div className="admin-card-header">
+          <h1 className="admin-card-title">
+            <FiUsers size={24} />
+            Manage Users
+          </h1>
         </div>
 
         {message && (
-          <div className={`message ${message.includes('Error') ? 'error' : 'success'}`} style={{ padding: '10px', marginBottom: '20px', borderRadius: '4px', backgroundColor: message.includes('Error') ? '#f8d7da' : '#d4edda', color: message.includes('Error') ? '#721c24' : '#155724' }}>
+          <div className={`admin-alert ${message.includes('Error') ? 'admin-alert-error' : 'admin-alert-success'}`}>
             {message}
           </div>
         )}
-      </div>
 
-      {/* Users Table */}
-      <div style={{ backgroundColor: 'white', borderRadius: '8px', border: '1px solid #dee2e6', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead style={{ backgroundColor: '#f8f9fa' }}>
-            <tr>
-              <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Email</th>
-              <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Role</th>
-              <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Created</th>
-              <th style={{ padding: '15px', textAlign: 'left', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Last Updated</th>
-              <th style={{ padding: '15px', textAlign: 'center', borderBottom: '1px solid #dee2e6', fontWeight: 'bold' }}>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredUsers.map(user => {
-              const currentUser = JSON.parse(localStorage.getItem('user'));
-              const isCurrentUser = currentUser.id === user._id;
-              
-              return (
-                <tr key={user._id} style={{ borderBottom: '1px solid #dee2e6' }}>
-                  <td style={{ padding: '15px' }}>
-                    {user.email}
-                    {isCurrentUser && <span style={{ marginLeft: '8px', backgroundColor: '#007bff', color: 'white', padding: '2px 6px', borderRadius: '3px', fontSize: '12px' }}>You</span>}
-                  </td>
-                  <td style={{ padding: '15px' }}>
-                    <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user._id, e.target.value)}
-                      disabled={isCurrentUser}
-                      style={{ 
-                        padding: '5px 10px', 
-                        border: '1px solid #ddd', 
-                        borderRadius: '4px',
-                        backgroundColor: user.role === 'admin' ? '#dc3545' : '#28a745',
-                        color: 'white',
-                        cursor: isCurrentUser ? 'not-allowed' : 'pointer'
-                      }}
-                    >
-                      <option value="user">User</option>
-                      <option value="admin">Admin</option>
-                    </select>
-                  </td>
-                  <td style={{ padding: '15px', color: '#666' }}>{formatDate(user.createdAt)}</td>
-                  <td style={{ padding: '15px', color: '#666' }}>{formatDate(user.updatedAt)}</td>
-                  <td style={{ padding: '15px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => handleDeleteUser(user._id, user.email)}
-                      disabled={isCurrentUser}
-                      style={{ 
-                        padding: '6px 12px', 
-                        backgroundColor: isCurrentUser ? '#6c757d' : '#dc3545', 
-                        color: 'white', 
-                        border: 'none', 
-                        borderRadius: '4px', 
-                        cursor: isCurrentUser ? 'not-allowed' : 'pointer',
-                        fontSize: '14px'
-                      }}
-                      title={isCurrentUser ? 'Cannot delete your own account' : 'Delete user'}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {filteredUsers.length === 0 && !loading && (
-        <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
-          {searchTerm ? 'No users found matching your search.' : 'No users found in the system.'}
+        {/* Statistics */}
+        <div className="stats-grid">
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiUsers size={28} />
+            </div>
+            <div className="stat-number">{stats.totalUsers || 0}</div>
+            <div className="stat-label">Total Users</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiClock size={28} />
+            </div>
+            <div className="stat-number">{stats.pendingUsers || 0}</div>
+            <div className="stat-label">Pending Users</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiCheckCircle size={28} />
+            </div>
+            <div className="stat-number">{stats.approvedUsers || 0}</div>
+            <div className="stat-label">Approved Users</div>
+          </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiAward size={28} />
+            </div>
+            <div className="stat-number">{stats.adminUsers || 0}</div>
+            <div className="stat-label">Administrators</div>
+          </div>
         </div>
-      )}
 
-      {/* Help Information */}
-      <div style={{ marginTop: '30px', padding: '20px', backgroundColor: '#e9ecef', borderRadius: '8px' }}>
-        <h3 style={{ margin: '0 0 15px 0', color: '#495057' }}>User Management Help</h3>
-        <ul style={{ margin: 0, paddingLeft: '20px', color: '#666' }}>
-          <li><strong>Admin Role:</strong> Can manage all papers and users, has full system access</li>
-          <li><strong>User Role:</strong> Can upload and manage their own papers, view public papers</li>
-          <li><strong>Role Changes:</strong> Take effect immediately, users may need to log in again</li>
-          <li><strong>Delete Users:</strong> Permanently removes user account and their associated data</li>
-          <li><strong>Security:</strong> You cannot delete your own admin account or change your own role</li>
-        </ul>
+        {/* Filters and Search */}
+        <div className="admin-card">
+          <div className="filters-section">
+            <div className="admin-form-group">
+              <label className="admin-form-label">Search Users</label>
+              <input
+                type="text"
+                className="admin-form-input"
+                placeholder="Search by email or role..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="admin-form-group">
+              <label className="admin-form-label">Filter by Status</label>
+              <select
+                className="admin-form-input"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Users</option>
+                <option value="pending">Pending Approval</option>
+                <option value="approved">Approved</option>
+                <option value="rejected">Rejected</option>
+                <option value="admin">Administrators</option>
+              </select>
+            </div>
+            <div className="admin-form-group">
+              <button className="admin-btn admin-btn-primary" onClick={loadData} disabled={loading}>
+                <FiRefreshCw size={16} />
+                Refresh
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Users Table */}
+        <div className="admin-card">
+          <div className="admin-card-header">
+            <h2 className="admin-card-title">
+              Users List ({filteredUsers.length})
+            </h2>
+          </div>
+
+          {loading ? (
+            <div className="admin-loading">
+              <div className="admin-loading-spinner"></div>
+              <p>Loading users...</p>
+            </div>
+          ) : filteredUsers.length === 0 ? (
+            <div className="admin-alert admin-alert-info">
+              <p>{searchTerm || filterStatus !== 'all' ? 'No users found matching your filters.' : 'No users found in the system.'}</p>
+            </div>
+          ) : (
+            <div className="admin-table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Status</th>
+                    <th>Role</th>
+                    <th>Registered</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredUsers.map(user => {
+                    const currentUser = JSON.parse(localStorage.getItem('user'));
+                    const isCurrentUser = currentUser.id === user._id;
+                    
+                    return (
+                      <tr key={user._id}>
+                        <td>
+                          <div className="user-cell">
+                            <div className="user-avatar">
+                              <FiUser size={16} />
+                            </div>
+                            <div>
+                              <div className="user-email">{user.email}</div>
+                              {isCurrentUser && <span className="current-user-badge">You</span>}
+                            </div>
+                          </div>
+                        </td>
+                        <td>
+                          <select
+                            className="status-select"
+                            value={user.status || 'pending'}
+                            onChange={(e) => handleStatusChange(user._id, e.target.value)}
+                            disabled={isCurrentUser || user.role === 'admin'}
+                          >
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                            <option value="rejected">Rejected</option>
+                          </select>
+                        </td>
+                        <td>
+                          <select
+                            className="role-select"
+                            value={user.role}
+                            onChange={(e) => handleRoleChange(user._id, e.target.value)}
+                            disabled={isCurrentUser}
+                          >
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                          </select>
+                        </td>
+                        <td>{formatDate(user.createdAt)}</td>
+                        <td>
+                          <button
+                            className="admin-btn admin-btn-danger"
+                            onClick={() => handleDeleteUser(user._id, user.email)}
+                            disabled={isCurrentUser}
+                            title={isCurrentUser ? 'Cannot delete your own account' : 'Delete user'}
+                          >
+                            <FiTrash2 size={16} />
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+
+        {/* Help Information */}
+        <div className="admin-card">
+          <div className="admin-card-header">
+            <h2 className="admin-card-title">
+              <FiInfo size={20} />
+              User Management Guide
+            </h2>
+          </div>
+          <div className="help-content">
+            <div className="help-section">
+              <h4>User Statuses</h4>
+              <ul>
+                <li><strong>Pending:</strong> User registered but awaiting admin approval</li>
+                <li><strong>Approved:</strong> User can log in and access the system</li>
+                <li><strong>Rejected:</strong> User registration was declined</li>
+              </ul>
+            </div>
+            <div className="help-section">
+              <h4>User Roles</h4>
+              <ul>
+                <li><strong>User:</strong> Can upload and manage their own papers, view public papers</li>
+                <li><strong>Admin:</strong> Can manage all papers and users, has full system access</li>
+              </ul>
+            </div>
+            <div className="help-section">
+              <h4>Important Notes</h4>
+              <ul>
+                <li>You cannot delete your own admin account or change your own role</li>
+                <li>Role and status changes take effect immediately</li>
+                <li>Users receive email notifications when their status changes</li>
+                <li>Deleting a user permanently removes their account and associated data</li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
+
+      <style jsx>{`
+        .admin-manage-users {
+          max-width: 1400px;
+        }
+
+        .filters-section {
+          display: grid;
+          grid-template-columns: 1fr 200px 120px;
+          gap: 20px;
+          align-items: end;
+        }
+
+        .user-cell {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+        }
+
+        .user-avatar {
+          width: 35px;
+          height: 35px;
+          background: var(--royal-velvet-bg);
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          color: var(--royal-velvet);
+        }
+
+        .user-email {
+          font-weight: 500;
+          color: var(--text-dark);
+        }
+
+        .current-user-badge {
+          background: var(--royal-velvet);
+          color: white;
+          padding: 2px 8px;
+          border-radius: 12px;
+          font-size: 11px;
+          font-weight: 600;
+          text-transform: uppercase;
+        }
+
+        .status-select, .role-select {
+          padding: 6px 12px;
+          border: 2px solid var(--medium-gray);
+          border-radius: 6px;
+          font-size: 14px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.3s ease;
+        }
+
+        .status-select:focus, .role-select:focus {
+          outline: none;
+          border-color: var(--royal-velvet);
+        }
+
+        .status-select[value="pending"] {
+          background: rgba(255, 193, 7, 0.1);
+          color: #856404;
+        }
+
+        .status-select[value="approved"] {
+          background: rgba(40, 167, 69, 0.1);
+          color: #155724;
+        }
+
+        .status-select[value="rejected"] {
+          background: rgba(220, 53, 69, 0.1);
+          color: #721c24;
+        }
+
+        .role-select[value="user"] {
+          background: rgba(102, 51, 153, 0.1);
+          color: var(--royal-velvet);
+        }
+
+        .role-select[value="admin"] {
+          background: rgba(220, 53, 69, 0.1);
+          color: #721c24;
+        }
+
+        .help-content {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 25px;
+        }
+
+        .help-section h4 {
+          margin: 0 0 10px 0;
+          color: var(--royal-velvet);
+          font-size: 16px;
+        }
+
+        .help-section ul {
+          margin: 0;
+          padding-left: 20px;
+        }
+
+        .help-section li {
+          margin-bottom: 8px;
+          color: var(--text-dark);
+          line-height: 1.5;
+        }
+
+        @media (max-width: 768px) {
+          .filters-section {
+            grid-template-columns: 1fr;
+          }
+          
+          .stats-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          
+          .help-content {
+            grid-template-columns: 1fr;
+          }
+        }
+
+        @media (max-width: 480px) {
+          .stats-grid {
+            grid-template-columns: 1fr;
+          }
+        }
+      `}</style>
+    </AdminLayout>
   );
 };
 

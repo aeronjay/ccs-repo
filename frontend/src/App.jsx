@@ -5,8 +5,10 @@ import SignIn from './pages/SignIn';
 import Register from './pages/Register';
 import ManagePapers from './pages/ManagePapers';
 import Settings from './pages/Settings';
+import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminManagePapers from './pages/admin/AdminManagePapers';
 import AdminManageUsers from './pages/admin/AdminManageUsers';
+import AdminPendingApprovals from './pages/admin/AdminPendingApprovals';
 import AdminMessages from './pages/admin/AdminMessages';
 import AdminSettings from './pages/admin/AdminSettings';
 import './App.css';
@@ -25,8 +27,10 @@ function App() {
           <Route path="/settings" element={<Settings />} />
           
           {/* Admin Routes */}
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
           <Route path="/admin/manage-papers" element={<AdminManagePapers />} />
           <Route path="/admin/manage-users" element={<AdminManageUsers />} />
+          <Route path="/admin/pending-approvals" element={<AdminPendingApprovals />} />
           <Route path="/admin/messages" element={<AdminMessages />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
         </Routes>

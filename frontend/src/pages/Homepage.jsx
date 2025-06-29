@@ -2,6 +2,15 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
 import PaperDetailModal from '../components/PaperDetailModal';
+import { 
+  FiBarChart2, 
+  FiUsers, 
+  FiClock, 
+  FiFileText, 
+  FiMessageSquare, 
+  FiSettings,
+  FiLogOut
+} from 'react-icons/fi';
 import '../../styles/Homepage.css';
 
 const Homepage = () => {
@@ -158,11 +167,17 @@ const Homepage = () => {
       case 'settings':
         navigate('/settings');
         break;
+      case 'admin-dashboard':
+        navigate('/admin/dashboard');
+        break;
       case 'admin-manage-papers':
         navigate('/admin/manage-papers');
         break;
       case 'admin-manage-users':
         navigate('/admin/manage-users');
+        break;
+      case 'admin-pending-approvals':
+        navigate('/admin/pending-approvals');
         break;
       case 'admin-messages':
         navigate('/admin/messages');
@@ -300,23 +315,36 @@ const Homepage = () => {
                       </>
                     ) : (
                       <>
+                        <button onClick={() => handleUserMenuClick('admin-dashboard')}>
+                          <FiBarChart2 size={16} />
+                          Admin Dashboard
+                        </button>
+                        <button onClick={() => handleUserMenuClick('admin-pending-approvals')}>
+                          <FiClock size={16} />
+                          Pending Approvals
+                        </button>
                         <button onClick={() => handleUserMenuClick('admin-manage-papers')}>
-                          📄 Manage Papers
+                          <FiFileText size={16} />
+                          Manage Papers
                         </button>
                         <button onClick={() => handleUserMenuClick('admin-manage-users')}>
-                          👥 Manage Users
+                          <FiUsers size={16} />
+                          Manage Users
                         </button>
                         <button onClick={() => handleUserMenuClick('admin-messages')}>
-                          💬 Messages
+                          <FiMessageSquare size={16} />
+                          Messages
                         </button>
                         <button onClick={() => handleUserMenuClick('admin-settings')}>
-                          ⚙️ Settings
+                          <FiSettings size={16} />
+                          Settings
                         </button>
                       </>
                     )}
                     <div className="dropdown-divider"></div>
                     <button onClick={() => handleUserMenuClick('logout')} className="logout-btn">
-                      🚪 Logout
+                      <FiLogOut size={16} />
+                      Logout
                     </button>
                   </div>
                 )}

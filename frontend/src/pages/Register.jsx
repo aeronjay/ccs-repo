@@ -171,9 +171,10 @@ const Register = () => {
     }
 
     try {
-      await authService.register(formData.email, formData.password);
+      const response = await authService.register(formData.email, formData.password);
       
-      alert('Registration successful! Please sign in.');
+      // Show success message with approval info
+      alert('Registration successful! Your account is pending approval. You will receive an email notification once an administrator approves your account.');
       navigate('/signin');
     } catch (error) {
       setError(error.message || 'Registration failed. Please try again.');

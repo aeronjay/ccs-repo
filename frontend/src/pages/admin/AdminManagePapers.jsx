@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import AdminLayout from '../../components/AdminLayout';
 import { paperService } from '../../services/service';
-import '../../styles/ManagePapers.css';
 
 const AdminManagePapers = () => {
   const navigate = useNavigate();
