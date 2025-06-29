@@ -30,6 +30,9 @@ const ManagePapers = () => {
   const [isPublished, setIsPublished] = useState(false); // New for published status
   const [references, setReferences] = useState(''); // New for references
   const [conferenceProceeding, setConferenceProceeding] = useState(false); // New for conference proceeding status
+  const [hasPublisher, setHasPublisher] = useState(false); // Radio button state for publisher
+  const [hasDoi, setHasDoi] = useState(false); // Radio button state for DOI
+  const [hasConference, setHasConference] = useState(false); // Radio button state for conference
   
   // SDG options
   const sdgOptions = [
@@ -215,6 +218,12 @@ const ManagePapers = () => {
     setKeywordsList(paper.tags || []);
     setSelectedSDGs(paper.sdgs || []);
     setDoi(paper.doi || '');
+    setIsPublished(paper.isPublished || false);
+    setReferences(paper.references || '');
+    setConferenceProceeding(paper.conferenceProceeding || false);
+    setHasPublisher(paper.publisher && paper.publisher.trim() !== '' ? true : false);
+    setHasDoi(paper.doi && paper.doi.trim() !== '' ? true : false);
+    setHasConference(paper.conferenceProceeding || false);
     setIsPublished(paper.isPublished || false); // Set published status
     setReferences(paper.references || ''); // Set references
     setConferenceProceeding(paper.conferenceProceeding || false); // Set conference proceeding status
@@ -243,6 +252,9 @@ const ManagePapers = () => {
     setIsPublished(false);
     setReferences('');
     setConferenceProceeding(false);
+    setHasPublisher(false);
+    setHasDoi(false);
+    setHasConference(false);
   };
   const handleUpload = async (event) => {
     event.preventDefault();
@@ -278,6 +290,16 @@ const ManagePapers = () => {
       return;
     }
 
+    if (isPublished && hasPublisher && !publisher.trim()) {
+      setMessage('Please enter a publisher');
+      return;
+    }
+
+    if (isPublished && hasDoi && !doi.trim()) {
+      setMessage('Please enter a DOI');
+      return;
+    }
+
     if (selectedSDGs.length === 0) {
       setMessage('Please select at least one SDG');
       return;
@@ -290,13 +312,13 @@ const ManagePapers = () => {
         journal: isPublished ? journal : '',
         isPublished,
         year,
-        publisher,
+        publisher: isPublished && hasPublisher ? publisher : '',
         authors: authorsList,
         tags: keywordsList,
         sdgs: selectedSDGs,
-        doi: doi || `DOI-${Date.now()}`, // Generate a simple DOI if not provided
+        doi: isPublished && hasDoi ? doi : (isPublished && hasDoi ? `DOI-${Date.now()}` : ''), // Generate a simple DOI if not provided but only when published
         references,
-        conferenceProceeding
+        conferenceProceeding: isPublished && hasConference
       };
 
       await paperService.upload(selectedFile, userId, title, abstract, additionalData);
@@ -333,6 +355,16 @@ const ManagePapers = () => {
       return;
     }
 
+    if (isPublished && hasPublisher && !publisher.trim()) {
+      setMessage('Please enter a publisher');
+      return;
+    }
+
+    if (isPublished && hasDoi && !doi.trim()) {
+      setMessage('Please enter a DOI');
+      return;
+    }
+
     if (selectedSDGs.length === 0) {
       setMessage('Please select at least one SDG');
       return;
@@ -347,13 +379,13 @@ const ManagePapers = () => {
         journal: isPublished ? journal : '',
         isPublished,
         year,
-        publisher,
+        publisher: isPublished && hasPublisher ? publisher : '',
         authors: authorsList,
         tags: keywordsList,
         sdgs: selectedSDGs,
-        doi,
+        doi: isPublished && hasDoi ? doi : '',
         references,
-        conferenceProceeding
+        conferenceProceeding: isPublished && hasConference
       };
 
       await paperService.updatePaper(selectedPaper.id, userId, updatedData);
@@ -756,26 +788,103 @@ const ManagePapers = () => {
                         </div>
                       </div>
                       {isPublished && (
-                        <input
-                          type="text"
-                          value={journal}
-                          onChange={(e) => setJournal(e.target.value)}
-                          className="form-input"
-                          placeholder="e.g., IEEE Transactions on Neural Networks"
-                          required={isPublished}
-                        />
+                        <>
+                          <input
+                            type="text"
+                            value={journal}
+                            onChange={(e) => setJournal(e.target.value)}
+                            className="form-input"
+                            placeholder="e.g., IEEE Transactions on Neural Networks"
+                            required={isPublished}
+                          />
+                          
+                          {/* Publisher Radio Button */}
+                          <div className="form-group" style={{ marginTop: '15px' }}>
+                            <div className="radio-group">
+                              <p>Does the paper have a publisher? <span className="required">*</span></p>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasPublisher"
+                                  value="yes"
+                                  checked={hasPublisher === true}
+                                  onChange={() => setHasPublisher(true)}
+                                  required
+                                />
+                                Yes
+                              </label>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasPublisher"
+                                  value="no"
+                                  checked={hasPublisher === false}
+                                  onChange={() => setHasPublisher(false)}
+                                  required
+                                />
+                                No
+                              </label>
+                            </div>
+                            
+                            {hasPublisher && (
+                              <div style={{ marginTop: '10px' }}>
+                                <label className="form-label">Publisher</label>
+                                <input
+                                  type="text"
+                                  value={publisher}
+                                  onChange={(e) => setPublisher(e.target.value)}
+                                  className="form-input"
+                                  placeholder="e.g., IEEE, ACM, Springer"
+                                  required={hasPublisher}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* DOI Radio Button */}
+                          <div className="form-group" style={{ marginTop: '15px' }}>
+                            <div className="radio-group">
+                              <p>Does the paper have a DOI? <span className="required">*</span></p>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasDoi"
+                                  value="yes"
+                                  checked={hasDoi === true}
+                                  onChange={() => setHasDoi(true)}
+                                  required
+                                />
+                                Yes
+                              </label>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasDoi"
+                                  value="no"
+                                  checked={hasDoi === false}
+                                  onChange={() => setHasDoi(false)}
+                                  required
+                                />
+                                No
+                              </label>
+                            </div>
+                            
+                            {hasDoi && (
+                              <div style={{ marginTop: '10px' }}>
+                                <label className="form-label">DOI</label>
+                                <input
+                                  type="text"
+                                  value={doi}
+                                  onChange={(e) => setDoi(e.target.value)}
+                                  className="form-input"
+                                  placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
+                                  required={hasDoi}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </>
                       )}
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Publisher</label>
-                      <input
-                        type="text"
-                        value={publisher}
-                        onChange={(e) => setPublisher(e.target.value)}
-                        className="form-input"
-                        placeholder="e.g., IEEE, ACM, Springer"
-                      />
                     </div>
                   </div>
 
@@ -794,6 +903,21 @@ const ManagePapers = () => {
                       />
                     </div>
 
+                    {!isPublished && (
+                      <div className="form-group">
+                        <label className="form-label">Publisher</label>
+                        <input
+                          type="text"
+                          value={publisher}
+                          onChange={(e) => setPublisher(e.target.value)}
+                          className="form-input"
+                          placeholder="e.g., IEEE, ACM, Springer"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {!isPublished && (
                     <div className="form-group">
                       <label className="form-label">DOI</label>
                       <input
@@ -804,24 +928,46 @@ const ManagePapers = () => {
                         placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
                       />
                     </div>
-                  </div>
+                  )}
 
-                  <div className="form-group">
-                    <label className="form-label">
-                      Conference Proceeding
-                    </label>
-                    <div className="checkbox-group">
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={conferenceProceeding}
-                          onChange={(e) => setConferenceProceeding(e.target.checked)}
-                        />
-                        This paper is a conference proceeding
-                      </label>
+                  {/* Conference Proceeding with Radio Buttons - Only shown when paper is published */}
+                  {isPublished && (
+                    <div className="form-group">
+                      <div className="radio-group">
+                        <p>Is this paper from a conference proceeding? <span className="required">*</span></p>
+                        <label className="radio-label">
+                          <input
+                            type="radio"
+                            name="hasConference"
+                            value="yes"
+                            checked={hasConference === true}
+                            onChange={() => {
+                              setHasConference(true);
+                              setConferenceProceeding(true);
+                            }}
+                            required
+                          />
+                          Yes
+                        </label>
+                        <label className="radio-label">
+                          <input
+                            type="radio"
+                            name="hasConference"
+                            value="no"
+                            checked={hasConference === false}
+                            onChange={() => {
+                              setHasConference(false);
+                              setConferenceProceeding(false);
+                            }}
+                            required
+                          />
+                          No
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
+                  {/* References */}
                   <div className="form-group">
                     <label className="form-label">References</label>
                     <textarea
@@ -888,12 +1034,11 @@ const ManagePapers = () => {
                       className="cancel-button"
                     >
                       Cancel
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={uploading || !selectedFile || !title || !abstract || (isPublished && !journal) || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
-                      className="upload-button"
-                    >
+                    </button>                      <button
+                        type="submit"
+                        disabled={uploading || !selectedFile || !title || !abstract || (isPublished && !journal) || (isPublished && hasPublisher && !publisher) || (isPublished && hasDoi && !doi) || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
+                        className="upload-button"
+                      >
                       {uploading ? 
                         <><i className="fas fa-spinner fa-spin"></i> Uploading...</> : 
                         <><i className="fas fa-cloud-upload-alt"></i> Upload Paper</>
@@ -1115,26 +1260,103 @@ const ManagePapers = () => {
                         </div>
                       </div>
                       {isPublished && (
-                        <input
-                          type="text"
-                          value={journal}
-                          onChange={(e) => setJournal(e.target.value)}
-                          className="form-input"
-                          placeholder="e.g., IEEE Transactions on Neural Networks"
-                          required={isPublished}
-                        />
+                        <>
+                          <input
+                            type="text"
+                            value={journal}
+                            onChange={(e) => setJournal(e.target.value)}
+                            className="form-input"
+                            placeholder="e.g., IEEE Transactions on Neural Networks"
+                            required={isPublished}
+                          />
+                          
+                          {/* Publisher Radio Button */}
+                          <div className="form-group" style={{ marginTop: '15px' }}>
+                            <div className="radio-group">
+                              <p>Does the paper have a publisher? <span className="required">*</span></p>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasPublisher"
+                                  value="yes"
+                                  checked={hasPublisher === true}
+                                  onChange={() => setHasPublisher(true)}
+                                  required
+                                />
+                                Yes
+                              </label>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasPublisher"
+                                  value="no"
+                                  checked={hasPublisher === false}
+                                  onChange={() => setHasPublisher(false)}
+                                  required
+                                />
+                                No
+                              </label>
+                            </div>
+                            
+                            {hasPublisher && (
+                              <div style={{ marginTop: '10px' }}>
+                                <label className="form-label">Publisher</label>
+                                <input
+                                  type="text"
+                                  value={publisher}
+                                  onChange={(e) => setPublisher(e.target.value)}
+                                  className="form-input"
+                                  placeholder="e.g., IEEE, ACM, Springer"
+                                  required={hasPublisher}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* DOI Radio Button */}
+                          <div className="form-group" style={{ marginTop: '15px' }}>
+                            <div className="radio-group">
+                              <p>Does the paper have a DOI? <span className="required">*</span></p>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasDoi"
+                                  value="yes"
+                                  checked={hasDoi === true}
+                                  onChange={() => setHasDoi(true)}
+                                  required
+                                />
+                                Yes
+                              </label>
+                              <label className="radio-label">
+                                <input
+                                  type="radio"
+                                  name="hasDoi"
+                                  value="no"
+                                  checked={hasDoi === false}
+                                  onChange={() => setHasDoi(false)}
+                                  required
+                                />
+                                No
+                              </label>
+                            </div>
+                            
+                            {hasDoi && (
+                              <div style={{ marginTop: '10px' }}>
+                                <label className="form-label">DOI</label>
+                                <input
+                                  type="text"
+                                  value={doi}
+                                  onChange={(e) => setDoi(e.target.value)}
+                                  className="form-input"
+                                  placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
+                                  required={hasDoi}
+                                />
+                              </div>
+                            )}
+                          </div>
+                        </>
                       )}
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Publisher</label>
-                      <input
-                        type="text"
-                        value={publisher}
-                        onChange={(e) => setPublisher(e.target.value)}
-                        className="form-input"
-                        placeholder="e.g., IEEE, ACM, Springer"
-                      />
                     </div>
                   </div>
 
@@ -1153,6 +1375,21 @@ const ManagePapers = () => {
                       />
                     </div>
 
+                    {!isPublished && (
+                      <div className="form-group">
+                        <label className="form-label">Publisher</label>
+                        <input
+                          type="text"
+                          value={publisher}
+                          onChange={(e) => setPublisher(e.target.value)}
+                          className="form-input"
+                          placeholder="e.g., IEEE, ACM, Springer"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  {!isPublished && (
                     <div className="form-group">
                       <label className="form-label">DOI</label>
                       <input
@@ -1160,27 +1397,49 @@ const ManagePapers = () => {
                         value={doi}
                         onChange={(e) => setDoi(e.target.value)}
                         className="form-input"
-                        placeholder="e.g., 10.1000/182"
+                        placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
                       />
                     </div>
-                  </div>
+                  )}
 
-                  <div className="form-group">
-                    <label className="form-label">
-                      Conference Proceeding
-                    </label>
-                    <div className="checkbox-group">
-                      <label className="checkbox-label">
-                        <input
-                          type="checkbox"
-                          checked={conferenceProceeding}
-                          onChange={(e) => setConferenceProceeding(e.target.checked)}
-                        />
-                        This paper is a conference proceeding
-                      </label>
+                  {/* Conference Proceeding with Radio Buttons - Only shown when paper is published */}
+                  {isPublished && (
+                    <div className="form-group">
+                      <div className="radio-group">
+                        <p>Is this paper from a conference proceeding? <span className="required">*</span></p>
+                        <label className="radio-label">
+                          <input
+                            type="radio"
+                            name="hasConference"
+                            value="yes"
+                            checked={hasConference === true}
+                            onChange={() => {
+                              setHasConference(true);
+                              setConferenceProceeding(true);
+                            }}
+                            required
+                          />
+                          Yes
+                        </label>
+                        <label className="radio-label">
+                          <input
+                            type="radio"
+                            name="hasConference"
+                            value="no"
+                            checked={hasConference === false}
+                            onChange={() => {
+                              setHasConference(false);
+                              setConferenceProceeding(false);
+                            }}
+                            required
+                          />
+                          No
+                        </label>
+                      </div>
                     </div>
-                  </div>
+                  )}
 
+                  {/* References */}
                   <div className="form-group">
                     <label className="form-label">References</label>
                     <textarea
