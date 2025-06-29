@@ -11,12 +11,18 @@ const Register = () => {
     email: '',
     password: '',
     confirmPassword: '',
-    role: 'user',
     department: '',
     studentId: ''
   });
+  const [emailVerification, setEmailVerification] = useState({
+    isEmailSent: false,
+    otp: '',
+    isVerified: false,
+    otpExpiry: null
+  });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [otpLoading, setOtpLoading] = useState(false);
 
   const handleChange = (e) => {
     setFormData({
@@ -25,11 +31,115 @@ const Register = () => {
     });
     // Clear error when user starts typing
     if (error) setError('');
+    
+    // Reset email verification if email changes
+    if (e.target.name === 'email' && emailVerification.isEmailSent) {
+      setEmailVerification({
+        isEmailSent: false,
+        otp: '',
+        isVerified: false,
+        otpExpiry: null
+      });
+    }
+  };
+
+  const handleOtpChange = (e) => {
+    setEmailVerification({
+      ...emailVerification,
+      otp: e.target.value
+    });
+    if (error) setError('');
+  };
+
+  const sendOTP = async () => {
+    if (!formData.email) {
+      setError('Please enter your email address first');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+
+    setOtpLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/send-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setEmailVerification({
+          ...emailVerification,
+          isEmailSent: true,
+          otpExpiry: data.expiresAt
+        });
+        alert('OTP sent to your email. Please check your inbox.');
+      } else {
+        setError(data.message || 'Failed to send OTP');
+      }
+    } catch (error) {
+      setError('Failed to send OTP. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
+  };
+
+  const verifyOTP = async () => {
+    if (!emailVerification.otp) {
+      setError('Please enter the OTP');
+      return;
+    }
+
+    setOtpLoading(true);
+    setError('');
+
+    try {
+      const response = await fetch('http://localhost:3000/api/auth/verify-otp', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email: formData.email, 
+          otp: emailVerification.otp 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setEmailVerification({
+          ...emailVerification,
+          isVerified: true
+        });
+        alert('Email verified successfully!');
+      } else {
+        setError(data.message || 'Invalid OTP');
+      }
+    } catch (error) {
+      setError('Failed to verify OTP. Please try again.');
+    } finally {
+      setOtpLoading(false);
+    }
   };
 
   const validateForm = () => {
     if (!formData.firstName || !formData.lastName || !formData.email || !formData.password) {
       return 'Please fill in all required fields';
+    }
+
+    if (!emailVerification.isVerified) {
+      return 'Please verify your email address first';
     }
 
     if (formData.password.length < 6) {
@@ -47,6 +157,7 @@ const Register = () => {
 
     return null;
   };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -60,7 +171,7 @@ const Register = () => {
     }
 
     try {
-      await authService.register(formData.email, formData.password, formData.role);
+      await authService.register(formData.email, formData.password);
       
       alert('Registration successful! Please sign in.');
       navigate('/signin');
@@ -117,29 +228,46 @@ const Register = () => {
 
           <div className="form-group">
             <label htmlFor="email">Email Address *</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              placeholder="Enter your email"
-              required
-            />
-          </div>
-
-          <div className="form-group">
-            <label htmlFor="role">Role *</label>
-            <select
-              id="role"
-              name="role"
-              value={formData.role}
-              onChange={handleChange}
-              required
-            >
-              <option value="user">Student/Researcher</option>
-              <option value="admin">Faculty/Admin</option>
-            </select>
+            <div className="email-verification-group">
+              <input
+                type="email"
+                id="email"
+                name="email"
+                value={formData.email}
+                onChange={handleChange}
+                placeholder="Enter your email"
+                required
+                disabled={emailVerification.isVerified}
+              />
+              <button
+                type="button"
+                className={`verify-btn ${emailVerification.isVerified ? 'verified' : ''}`}
+                onClick={sendOTP}
+                disabled={otpLoading || emailVerification.isVerified || !formData.email}
+              >
+                {emailVerification.isVerified ? '✓ Verified' : otpLoading ? 'Sending...' : 'Send OTP'}
+              </button>
+            </div>
+            {emailVerification.isEmailSent && !emailVerification.isVerified && (
+              <div className="otp-verification">
+                <input
+                  type="text"
+                  placeholder="Enter 6-digit OTP"
+                  value={emailVerification.otp}
+                  onChange={handleOtpChange}
+                  maxLength="6"
+                  className="otp-input"
+                />
+                <button
+                  type="button"
+                  className="verify-otp-btn"
+                  onClick={verifyOTP}
+                  disabled={otpLoading || !emailVerification.otp}
+                >
+                  {otpLoading ? 'Verifying...' : 'Verify OTP'}
+                </button>
+              </div>
+            )}
           </div>
 
           <div className="form-group">
