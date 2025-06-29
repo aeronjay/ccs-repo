@@ -392,6 +392,7 @@ const ManagePapers = () => {
           <button
             onClick={() => navigate('/signin')}
             className="upload-button"
+            style={{ marginTop: '12px' }}
           >
             Go to Sign In
           </button>
@@ -405,25 +406,24 @@ const ManagePapers = () => {
           )}
 
           {/* Table Section */}
-          <div className="papers-table-section">
-            <div className="section-header">
-              <h2 className="section-title">My Research Papers</h2>
-              <button
-                onClick={openUploadModal}
-                className="upload-button"
-              >
-                <i className="fas fa-plus"></i> Upload New Paper
-              </button>
-            </div>
-            
-            {loading ? (
-              <div className="loading">Loading papers...</div>
-            ) : papers.length === 0 ? (
-              <div className="empty-state">
-                <div className="empty-state-title">No papers uploaded yet</div>
-                <div className="empty-state-text">Upload your first paper using the button above!</div>
-              </div>
-            ) : (
+          <div className="papers-table-section">        <div className="section-header">
+          <h2 className="section-title">My Research Papers</h2>
+          <button
+            onClick={openUploadModal}
+            className="upload-button"
+          >
+            <i className="fas fa-cloud-upload-alt"></i> Upload New Paper
+          </button>
+        </div>
+        
+        {loading ? (
+          <div className="loading">Loading your papers...</div>
+        ) : papers.length === 0 ? (
+          <div className="empty-state">
+            <div className="empty-state-title">No papers uploaded yet</div>
+            <div className="empty-state-text">Share your research with the academic community by uploading your first paper</div>
+          </div>
+        ) : (
               <div className="papers-table-container">
                 <table className="papers-table">
                   <thead>
@@ -522,8 +522,8 @@ const ManagePapers = () => {
                       <div className="upload-icon">
                         <i className="fas fa-cloud-upload-alt"></i>
                       </div>
-                      <div className="upload-text">Upload a file</div>
-                      <div className="upload-subtext">or drag and drop</div>
+                      <div className="upload-text">Upload your research paper</div>
+                      <div className="upload-subtext">or drag and drop your file here</div>
                       <div className="file-types">PDF or DOCX up to 10MB</div>
                     </div>
                     <input
@@ -754,7 +754,10 @@ const ManagePapers = () => {
                       disabled={uploading || !selectedFile || !title || !journal || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
                       className="upload-button"
                     >
-                      {uploading ? 'Uploading...' : 'Upload Paper'}
+                      {uploading ? 
+                        <><i className="fas fa-spinner fa-spin"></i> Uploading...</> : 
+                        <><i className="fas fa-cloud-upload-alt"></i> Upload Paper</>
+                      }
                     </button>
                   </div>
                 </form>
@@ -972,7 +975,10 @@ const ManagePapers = () => {
                       disabled={uploading || !title || !journal || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
                       className="upload-button"
                     >
-                      {uploading ? 'Saving...' : 'Save Changes'}
+                      {uploading ? 
+                        <><i className="fas fa-spinner fa-spin"></i> Saving...</> : 
+                        <><i className="fas fa-save"></i> Save Changes</>
+                      }
                     </button>
                   </div>
                 </form>
