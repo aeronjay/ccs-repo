@@ -164,6 +164,7 @@
   border: none;
   cursor: pointer;
   transition: all 0.2s ease;
+  font-size: 14px;
 }
 
 .download-button {
@@ -397,10 +398,9 @@
 }
 
 .upload-icon {
-  width: 48px;
-  height: 48px;
   margin: 0 auto 16px;
   color: #9ca3af;
+  font-size: 48px;
 }
 
 .upload-text {
@@ -437,9 +437,13 @@
 }
 
 .file-icon {
+  color: #4caf50;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
-  color: #4caf50;
 }
 
 .file-info {
@@ -622,9 +626,13 @@
 }
 
 .file-icon {
+  color: #4caf50;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 24px;
   height: 24px;
-  color: #4caf50;
 }
 
 .file-info {

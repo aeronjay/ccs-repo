@@ -412,7 +412,7 @@ const ManagePapers = () => {
                 onClick={openUploadModal}
                 className="upload-button"
               >
-                + Upload New Paper
+                <i className="fas fa-plus"></i> Upload New Paper
               </button>
             </div>
             
@@ -472,33 +472,21 @@ const ManagePapers = () => {
                             className="action-button download-button"
                             title="Download Paper"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                              <polyline points="7 10 12 15 17 10"></polyline>
-                              <line x1="12" y1="15" x2="12" y2="3"></line>
-                            </svg>
+                            <i className="fas fa-download"></i>
                           </button>
                           <button
                             onClick={() => openEditModal(paper)}
                             className="action-button edit-button"
                             title="Edit Paper"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-                              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
-                            </svg>
+                            <i className="fas fa-edit"></i>
                           </button>
                           <button
                             onClick={() => handleDelete(paper)}
                             className="action-button delete-button"
                             title="Delete Paper"
                           >
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                              <polyline points="3 6 5 6 21 6"></polyline>
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                              <line x1="10" y1="11" x2="10" y2="17"></line>
-                              <line x1="14" y1="11" x2="14" y2="17"></line>
-                            </svg>
+                            <i className="fas fa-trash"></i>
                           </button>
                         </td>
                       </tr>
@@ -532,9 +520,7 @@ const ManagePapers = () => {
                       onClick={() => document.getElementById('fileInput').click()}
                     >
                       <div className="upload-icon">
-                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                        </svg>
+                        <i className="fas fa-cloud-upload-alt"></i>
                       </div>
                       <div className="upload-text">Upload a file</div>
                       <div className="upload-subtext">or drag and drop</div>
@@ -551,9 +537,7 @@ const ManagePapers = () => {
                     {selectedFile && (
                       <div className="selected-file">
                         <div className="file-icon">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
+                          <i className="fas fa-file-alt"></i>
                         </div>
                         <div className="file-info">
                           <div className="file-name">{selectedFile.name}</div>
