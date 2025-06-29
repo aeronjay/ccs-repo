@@ -13,7 +13,7 @@ const ManagePapers = () => {
   const [selectedPaper, setSelectedPaper] = useState(null);
   const [selectedFile, setSelectedFile] = useState(null);
   const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [abstract, setAbstract] = useState(''); // Changed from description to abstract
   const [journal, setJournal] = useState('');
   const [year, setYear] = useState(new Date().getFullYear().toString());
   const [publisher, setPublisher] = useState('');
@@ -21,10 +21,15 @@ const ManagePapers = () => {
   const [keywordsList, setKeywordsList] = useState([]);
   const [selectedSDGs, setSelectedSDGs] = useState([]);
   const [currentAuthor, setCurrentAuthor] = useState('');
+  const [currentAuthorEmail, setCurrentAuthorEmail] = useState(''); // New for author email
+  const [currentAuthorPhone, setCurrentAuthorPhone] = useState(''); // New for author phone
   const [currentKeyword, setCurrentKeyword] = useState('');
   const [doi, setDoi] = useState('');
   const [message, setMessage] = useState('');
   const [dragOver, setDragOver] = useState(false);
+  const [isPublished, setIsPublished] = useState(false); // New for published status
+  const [references, setReferences] = useState(''); // New for references
+  const [conferenceProceeding, setConferenceProceeding] = useState(false); // New for conference proceeding status
   
   // SDG options
   const sdgOptions = [
@@ -96,15 +101,11 @@ const ManagePapers = () => {
 
   const handleFileSelect = (file) => {
     if (file) {
-      // Check file type
-      const allowedTypes = [
-        'application/pdf',
-        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'application/msword'
-      ];
+      // Check file type - only allow PDF
+      const allowedTypes = ['application/pdf'];
       
       if (!allowedTypes.includes(file.type)) {
-        setMessage('Only PDF and DOCX files are allowed');
+        setMessage('Only PDF files are allowed');
         return;
       }
       
@@ -148,9 +149,25 @@ const ManagePapers = () => {
   };
 
   const addAuthor = () => {
-    if (currentAuthor.trim() && !authorsList.includes(currentAuthor.trim())) {
-      setAuthorsList([...authorsList, currentAuthor.trim()]);
-      setCurrentAuthor('');
+    if (currentAuthor.trim()) {
+      // Create author object with name, email, and phone
+      const authorDetails = {
+        name: currentAuthor.trim(),
+        email: currentAuthorEmail.trim(),
+        phone: currentAuthorPhone.trim()
+      };
+      
+      // Check if an author with the same name already exists
+      const authorExists = authorsList.some(author => 
+        typeof author === 'object' ? author.name === authorDetails.name : author === authorDetails.name
+      );
+      
+      if (!authorExists) {
+        setAuthorsList([...authorsList, authorDetails]);
+        setCurrentAuthor('');
+        setCurrentAuthorEmail('');
+        setCurrentAuthorPhone('');
+      }
     }
   };
 
@@ -190,7 +207,7 @@ const ManagePapers = () => {
   const openEditModal = (paper) => {
     setSelectedPaper(paper);
     setTitle(paper.title);
-    setDescription(paper.description || '');
+    setAbstract(paper.abstract || '');
     setJournal(paper.journal || '');
     setYear(paper.year || new Date().getFullYear().toString());
     setPublisher(paper.publisher || '');
@@ -198,6 +215,9 @@ const ManagePapers = () => {
     setKeywordsList(paper.tags || []);
     setSelectedSDGs(paper.sdgs || []);
     setDoi(paper.doi || '');
+    setIsPublished(paper.isPublished || false); // Set published status
+    setReferences(paper.references || ''); // Set references
+    setConferenceProceeding(paper.conferenceProceeding || false); // Set conference proceeding status
     setShowEditModal(true);
   };
 
@@ -209,7 +229,7 @@ const ManagePapers = () => {
   const resetForm = () => {
     setSelectedFile(null);
     setTitle('');
-    setDescription('');
+    setAbstract('');
     setJournal('');
     setPublisher('');
     setYear(new Date().getFullYear().toString());
@@ -220,12 +240,21 @@ const ManagePapers = () => {
     setCurrentKeyword('');
     setDoi('');
     setSelectedPaper(null);
+    setIsPublished(false);
+    setReferences('');
+    setConferenceProceeding(false);
   };
   const handleUpload = async (event) => {
     event.preventDefault();
     
     if (!selectedFile) {
       setMessage('Please select a file');
+      return;
+    }
+
+    // Check if file type is PDF
+    if (selectedFile.type !== 'application/pdf') {
+      setMessage('Only PDF files are allowed');
       return;
     }
 
@@ -239,7 +268,12 @@ const ManagePapers = () => {
       return;
     }
 
-    if (!journal.trim()) {
+    if (!abstract.trim()) {
+      setMessage('Please enter an abstract');
+      return;
+    }
+
+    if (isPublished && !journal.trim()) {
       setMessage('Please enter a journal name');
       return;
     }
@@ -253,16 +287,19 @@ const ManagePapers = () => {
     try {
       // Prepare additional data
       const additionalData = {
-        journal,
+        journal: isPublished ? journal : '',
+        isPublished,
         year,
         publisher,
         authors: authorsList,
         tags: keywordsList,
         sdgs: selectedSDGs,
-        doi: doi || `DOI-${Date.now()}` // Generate a simple DOI if not provided
+        doi: doi || `DOI-${Date.now()}`, // Generate a simple DOI if not provided
+        references,
+        conferenceProceeding
       };
 
-      await paperService.upload(selectedFile, userId, title, description, additionalData);
+      await paperService.upload(selectedFile, userId, title, abstract, additionalData);
       setMessage('Paper uploaded successfully!');
       closeUploadModal();
       loadPapers(); // Refresh the list
@@ -286,7 +323,12 @@ const ManagePapers = () => {
       return;
     }
 
-    if (!journal.trim()) {
+    if (!abstract.trim()) {
+      setMessage('Please enter an abstract');
+      return;
+    }
+
+    if (isPublished && !journal.trim()) {
       setMessage('Please enter a journal name');
       return;
     }
@@ -301,14 +343,17 @@ const ManagePapers = () => {
       // Prepare updated data
       const updatedData = {
         title,
-        description,
-        journal,
+        abstract,
+        journal: isPublished ? journal : '',
+        isPublished,
         year,
         publisher,
         authors: authorsList,
         tags: keywordsList,
         sdgs: selectedSDGs,
-        doi
+        doi,
+        references,
+        conferenceProceeding
       };
 
       await paperService.updatePaper(selectedPaper.id, userId, updatedData);
@@ -383,7 +428,7 @@ const ManagePapers = () => {
         >
           ← Back
         </button>
-        <h1 className="page-title">Manage My Papers</h1>
+        <h1 className="page-title">My Submissions</h1>
       </div>
       
       {!userId ? (
@@ -407,7 +452,7 @@ const ManagePapers = () => {
 
           {/* Table Section */}
           <div className="papers-table-section">        <div className="section-header">
-          <h2 className="section-title">My Research Papers</h2>
+          <h2 className="section-title">My Research Submissions</h2>
           <button
             onClick={openUploadModal}
             className="upload-button"
@@ -457,7 +502,11 @@ const ManagePapers = () => {
                           {paper.year || 'N/A'}
                         </td>
                         <td>
-                          {paper.authors ? paper.authors.join(', ') : 'No authors listed'}
+                          {paper.authors ? paper.authors.map((author, i) => (
+                            typeof author === 'object' ? 
+                              <div key={i}>{author.name}</div> : 
+                              <div key={i}>{author}</div>
+                          )).join(', ') : 'No authors listed'}
                         </td>
                         <td>
                           <div>{paper.filename}</div>
@@ -507,53 +556,6 @@ const ManagePapers = () => {
                 </div>
                 
                 <form onSubmit={handleUpload} className="upload-form">
-                  {/* File Upload */}
-                  <div className="file-upload-section">
-                    <label className="form-label">
-                      Paper File (PDF/DOCX) <span className="required">*</span>
-                    </label>
-                    <div 
-                      className={`file-drop-zone ${dragOver ? 'drag-over' : ''}`}
-                      onDragOver={handleDragOver}
-                      onDragLeave={handleDragLeave}
-                      onDrop={handleDrop}
-                      onClick={() => document.getElementById('fileInput').click()}
-                    >
-                      <div className="upload-icon">
-                        <i className="fas fa-cloud-upload-alt"></i>
-                      </div>
-                      <div className="upload-text">Upload your research paper</div>
-                      <div className="upload-subtext">or drag and drop your file here</div>
-                      <div className="file-types">PDF or DOCX up to 10MB</div>
-                    </div>
-                    <input
-                      id="fileInput"
-                      type="file"
-                      accept=".pdf,.docx,.doc"
-                      onChange={handleFileInputChange}
-                      className="hidden-file-input"
-                    />
-                    
-                    {selectedFile && (
-                      <div className="selected-file">
-                        <div className="file-icon">
-                          <i className="fas fa-file-alt"></i>
-                        </div>
-                        <div className="file-info">
-                          <div className="file-name">{selectedFile.name}</div>
-                          <div className="file-size">{formatFileSize(selectedFile.size)}</div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={removeSelectedFile}
-                          className="remove-file"
-                        >
-                          ✕
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
                   {/* Title */}
                   <div className="form-group">
                     <label className="form-label">
@@ -569,16 +571,57 @@ const ManagePapers = () => {
                     />
                   </div>
 
-                  {/* Description */}
+                  {/* Abstract */}
                   <div className="form-group">
-                    <label className="form-label">Description</label>
+                    <label className="form-label">
+                      Abstract <span className="required">*</span>
+                    </label>
                     <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      value={abstract}
+                      onChange={(e) => setAbstract(e.target.value)}
                       className="form-textarea"
-                      placeholder="Enter paper description or abstract"
+                      placeholder="Enter paper abstract"
                       rows={4}
+                      required
                     />
+                  </div>
+
+                  {/* Keywords */}
+                  <div className="dynamic-input-group">
+                    <label className="form-label">
+                      Keywords <span className="required">*</span>
+                    </label>
+                    <div className="input-with-button">
+                      <input
+                        type="text"
+                        value={currentKeyword}
+                        onChange={(e) => setCurrentKeyword(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                        className="form-input"
+                        placeholder="Keyword"
+                      />
+                      <button
+                        type="button"
+                        onClick={addKeyword}
+                        className="add-button"
+                      >
+                        + Add Keyword
+                      </button>
+                    </div>
+                    <div className="tag-list">
+                      {keywordsList.map((keyword, index) => (
+                        <div key={index} className="tag-item">
+                          {keyword}
+                          <button
+                            type="button"
+                            onClick={() => removeKeyword(index)}
+                            className="remove-tag"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* SDG Selection */}
@@ -608,20 +651,33 @@ const ManagePapers = () => {
                     </div>
                   </div>
 
-                  {/* Authors and Keywords */}
-                  <div className="multi-input-section">
-                    <div className="dynamic-input-group">
-                      <label className="form-label">
-                        Authors <span className="required">*</span>
-                      </label>
-                      <div className="input-with-button">
+                  {/* Authors */}
+                  <div className="dynamic-input-group">
+                    <label className="form-label">
+                      Authors <span className="required">*</span>
+                    </label>
+                    <div className="author-input-container">
+                      <div className="multi-input-row">
                         <input
                           type="text"
                           value={currentAuthor}
                           onChange={(e) => setCurrentAuthor(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAuthor())}
                           className="form-input"
-                          placeholder="Author name"
+                          placeholder="Author name (Last name, First name, Middle name)"
+                        />
+                        <input
+                          type="email"
+                          value={currentAuthorEmail}
+                          onChange={(e) => setCurrentAuthorEmail(e.target.value)}
+                          className="form-input"
+                          placeholder="Email address"
+                        />
+                        <input
+                          type="tel"
+                          value={currentAuthorPhone}
+                          onChange={(e) => setCurrentAuthorPhone(e.target.value)}
+                          className="form-input"
+                          placeholder="Contact number"
                         />
                         <button
                           type="button"
@@ -631,74 +687,84 @@ const ManagePapers = () => {
                           + Add Author
                         </button>
                       </div>
-                      <div className="tag-list">
-                        {authorsList.map((author, index) => (
-                          <div key={index} className="tag-item">
-                            {author}
-                            <button
-                              type="button"
-                              onClick={() => removeAuthor(index)}
-                              className="remove-tag"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
                     </div>
-
-                    <div className="dynamic-input-group">
-                      <label className="form-label">
-                        Keywords <span className="required">*</span>
-                      </label>
-                      <div className="input-with-button">
-                        <input
-                          type="text"
-                          value={currentKeyword}
-                          onChange={(e) => setCurrentKeyword(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                          className="form-input"
-                          placeholder="Keyword"
-                        />
-                        <button
-                          type="button"
-                          onClick={addKeyword}
-                          className="add-button"
-                        >
-                          + Add Keyword
-                        </button>
-                      </div>
-                      <div className="tag-list">
-                        {keywordsList.map((keyword, index) => (
-                          <div key={index} className="tag-item">
-                            {keyword}
-                            <button
-                              type="button"
-                              onClick={() => removeKeyword(index)}
-                              className="remove-tag"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="authors-table-container">
+                      {authorsList.length > 0 && (
+                        <table className="authors-table">
+                          <thead>
+                            <tr>
+                              <th>Author Name</th>
+                              <th>Email</th>
+                              <th>Contact Number</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {authorsList.map((author, index) => (
+                              <tr key={index}>
+                                <td>{author.name}</td>
+                                <td>{author.email}</td>
+                                <td>{author.phone}</td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAuthor(index)}
+                                    className="remove-tag"
+                                  >
+                                    ×
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   </div>
 
-                  {/* Journal, Publisher, Year, and DOI */}
+                  {/* Journal, Publisher */}
                   <div className="multi-input-section">
                     <div className="form-group">
                       <label className="form-label">
-                        Journal <span className="required">*</span>
+                        Journal
                       </label>
-                      <input
-                        type="text"
-                        value={journal}
-                        onChange={(e) => setJournal(e.target.value)}
-                        className="form-input"
-                        placeholder="e.g., IEEE Transactions on Neural Networks"
-                        required
-                      />
+                      <div>
+                        <div className="radio-group">
+                          <p>Is the paper already published? <span className="required">*</span></p>
+                          <label className="radio-label">
+                            <input
+                              type="radio"
+                              name="isPublished"
+                              value="yes"
+                              checked={isPublished === true}
+                              onChange={() => setIsPublished(true)}
+                              required
+                            />
+                            Yes
+                          </label>
+                          <label className="radio-label">
+                            <input
+                              type="radio"
+                              name="isPublished"
+                              value="no"
+                              checked={isPublished === false}
+                              onChange={() => setIsPublished(false)}
+                              required
+                            />
+                            No
+                          </label>
+                        </div>
+                      </div>
+                      {isPublished && (
+                        <input
+                          type="text"
+                          value={journal}
+                          onChange={(e) => setJournal(e.target.value)}
+                          className="form-input"
+                          placeholder="e.g., IEEE Transactions on Neural Networks"
+                          required={isPublished}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -740,6 +806,80 @@ const ManagePapers = () => {
                     </div>
                   </div>
 
+                  <div className="form-group">
+                    <label className="form-label">
+                      Conference Proceeding
+                    </label>
+                    <div className="checkbox-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={conferenceProceeding}
+                          onChange={(e) => setConferenceProceeding(e.target.checked)}
+                        />
+                        This paper is a conference proceeding
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">References</label>
+                    <textarea
+                      value={references}
+                      onChange={(e) => setReferences(e.target.value)}
+                      className="form-textarea"
+                      placeholder="Enter paper references"
+                      rows={4}
+                    />
+                  </div>
+
+                  {/* File Upload - moved to the bottom */}
+                  <div className="file-upload-section">
+                    <label className="form-label">
+                      Paper File (PDF only) <span className="required">*</span>
+                    </label>
+                    <div 
+                      className={`file-drop-zone ${dragOver ? 'drag-over' : ''}`}
+                      onDragOver={handleDragOver}
+                      onDragLeave={handleDragLeave}
+                      onDrop={handleDrop}
+                      onClick={() => document.getElementById('fileInput').click()}
+                    >
+                      <div className="upload-icon">
+                        <i className="fas fa-cloud-upload-alt"></i>
+                      </div>
+                      <div className="upload-text">Upload your research paper</div>
+                      <div className="upload-subtext">or drag and drop your file here</div>
+                      <div className="file-types">PDF files only, up to 10MB</div>
+                    </div>
+                    <input
+                      id="fileInput"
+                      type="file"
+                      accept=".pdf"
+                      onChange={handleFileInputChange}
+                      className="hidden-file-input"
+                    />
+                    
+                    {selectedFile && (
+                      <div className="selected-file">
+                        <div className="file-icon">
+                          <i className="fas fa-file-alt"></i>
+                        </div>
+                        <div className="file-info">
+                          <div className="file-name">{selectedFile.name}</div>
+                          <div className="file-size">{formatFileSize(selectedFile.size)}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={removeSelectedFile}
+                          className="remove-file"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
                   {/* Form Actions */}
                   <div className="form-actions">
                     <button
@@ -751,7 +891,7 @@ const ManagePapers = () => {
                     </button>
                     <button
                       type="submit"
-                      disabled={uploading || !selectedFile || !title || !journal || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
+                      disabled={uploading || !selectedFile || !title || !abstract || (isPublished && !journal) || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
                       className="upload-button"
                     >
                       {uploading ? 
@@ -790,16 +930,57 @@ const ManagePapers = () => {
                     />
                   </div>
 
-                  {/* Description */}
+                  {/* Abstract */}
                   <div className="form-group">
-                    <label className="form-label">Description</label>
+                    <label className="form-label">
+                      Abstract <span className="required">*</span>
+                    </label>
                     <textarea
-                      value={description}
-                      onChange={(e) => setDescription(e.target.value)}
+                      value={abstract}
+                      onChange={(e) => setAbstract(e.target.value)}
                       className="form-textarea"
-                      placeholder="Enter paper description or abstract"
+                      placeholder="Enter paper abstract"
                       rows={4}
+                      required
                     />
+                  </div>
+
+                  {/* Keywords */}
+                  <div className="dynamic-input-group">
+                    <label className="form-label">
+                      Keywords <span className="required">*</span>
+                    </label>
+                    <div className="input-with-button">
+                      <input
+                        type="text"
+                        value={currentKeyword}
+                        onChange={(e) => setCurrentKeyword(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
+                        className="form-input"
+                        placeholder="Keyword"
+                      />
+                      <button
+                        type="button"
+                        onClick={addKeyword}
+                        className="add-button"
+                      >
+                        + Add Keyword
+                      </button>
+                    </div>
+                    <div className="tag-list">
+                      {keywordsList.map((keyword, index) => (
+                        <div key={index} className="tag-item">
+                          {keyword}
+                          <button
+                            type="button"
+                            onClick={() => removeKeyword(index)}
+                            className="remove-tag"
+                          >
+                            ×
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
 
                   {/* SDG Selection */}
@@ -829,20 +1010,33 @@ const ManagePapers = () => {
                     </div>
                   </div>
 
-                  {/* Authors and Keywords */}
-                  <div className="multi-input-section">
-                    <div className="dynamic-input-group">
-                      <label className="form-label">
-                        Authors <span className="required">*</span>
-                      </label>
-                      <div className="input-with-button">
+                  {/* Authors */}
+                  <div className="dynamic-input-group">
+                    <label className="form-label">
+                      Authors <span className="required">*</span>
+                    </label>
+                    <div className="author-input-container">
+                      <div className="multi-input-row">
                         <input
                           type="text"
                           value={currentAuthor}
                           onChange={(e) => setCurrentAuthor(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addAuthor())}
                           className="form-input"
-                          placeholder="Author name"
+                          placeholder="Author name (Last name, First name, Middle name)"
+                        />
+                        <input
+                          type="email"
+                          value={currentAuthorEmail}
+                          onChange={(e) => setCurrentAuthorEmail(e.target.value)}
+                          className="form-input"
+                          placeholder="Email address"
+                        />
+                        <input
+                          type="tel"
+                          value={currentAuthorPhone}
+                          onChange={(e) => setCurrentAuthorPhone(e.target.value)}
+                          className="form-input"
+                          placeholder="Contact number"
                         />
                         <button
                           type="button"
@@ -852,74 +1046,84 @@ const ManagePapers = () => {
                           + Add Author
                         </button>
                       </div>
-                      <div className="tag-list">
-                        {authorsList.map((author, index) => (
-                          <div key={index} className="tag-item">
-                            {author}
-                            <button
-                              type="button"
-                              onClick={() => removeAuthor(index)}
-                              className="remove-tag"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
                     </div>
-
-                    <div className="dynamic-input-group">
-                      <label className="form-label">
-                        Keywords <span className="required">*</span>
-                      </label>
-                      <div className="input-with-button">
-                        <input
-                          type="text"
-                          value={currentKeyword}
-                          onChange={(e) => setCurrentKeyword(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addKeyword())}
-                          className="form-input"
-                          placeholder="Keyword"
-                        />
-                        <button
-                          type="button"
-                          onClick={addKeyword}
-                          className="add-button"
-                        >
-                          + Add Keyword
-                        </button>
-                      </div>
-                      <div className="tag-list">
-                        {keywordsList.map((keyword, index) => (
-                          <div key={index} className="tag-item">
-                            {keyword}
-                            <button
-                              type="button"
-                              onClick={() => removeKeyword(index)}
-                              className="remove-tag"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                    <div className="authors-table-container">
+                      {authorsList.length > 0 && (
+                        <table className="authors-table">
+                          <thead>
+                            <tr>
+                              <th>Author Name</th>
+                              <th>Email</th>
+                              <th>Contact Number</th>
+                              <th>Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {authorsList.map((author, index) => (
+                              <tr key={index}>
+                                <td>{author.name}</td>
+                                <td>{author.email}</td>
+                                <td>{author.phone}</td>
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() => removeAuthor(index)}
+                                    className="remove-tag"
+                                  >
+                                    ×
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      )}
                     </div>
                   </div>
 
-                  {/* Journal, Publisher, Year, and DOI */}
+                  {/* Journal, Publisher */}
                   <div className="multi-input-section">
                     <div className="form-group">
                       <label className="form-label">
-                        Journal <span className="required">*</span>
+                        Journal
                       </label>
-                      <input
-                        type="text"
-                        value={journal}
-                        onChange={(e) => setJournal(e.target.value)}
-                        className="form-input"
-                        placeholder="e.g., IEEE Transactions on Neural Networks"
-                        required
-                      />
+                      <div>
+                        <div className="radio-group">
+                          <p>Is the paper already published? <span className="required">*</span></p>
+                          <label className="radio-label">
+                            <input
+                              type="radio"
+                              name="isPublished"
+                              value="yes"
+                              checked={isPublished === true}
+                              onChange={() => setIsPublished(true)}
+                              required
+                            />
+                            Yes
+                          </label>
+                          <label className="radio-label">
+                            <input
+                              type="radio"
+                              name="isPublished"
+                              value="no"
+                              checked={isPublished === false}
+                              onChange={() => setIsPublished(false)}
+                              required
+                            />
+                            No
+                          </label>
+                        </div>
+                      </div>
+                      {isPublished && (
+                        <input
+                          type="text"
+                          value={journal}
+                          onChange={(e) => setJournal(e.target.value)}
+                          className="form-input"
+                          placeholder="e.g., IEEE Transactions on Neural Networks"
+                          required={isPublished}
+                        />
+                      )}
                     </div>
 
                     <div className="form-group">
@@ -961,6 +1165,33 @@ const ManagePapers = () => {
                     </div>
                   </div>
 
+                  <div className="form-group">
+                    <label className="form-label">
+                      Conference Proceeding
+                    </label>
+                    <div className="checkbox-group">
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={conferenceProceeding}
+                          onChange={(e) => setConferenceProceeding(e.target.checked)}
+                        />
+                        This paper is a conference proceeding
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">References</label>
+                    <textarea
+                      value={references}
+                      onChange={(e) => setReferences(e.target.value)}
+                      className="form-textarea"
+                      placeholder="Enter paper references"
+                      rows={4}
+                    />
+                  </div>
+
                   {/* Form Actions */}
                   <div className="form-actions">
                     <button
@@ -972,7 +1203,7 @@ const ManagePapers = () => {
                     </button>
                     <button
                       type="submit"
-                      disabled={uploading || !title || !journal || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
+                      disabled={uploading || !title || !abstract || (isPublished && !journal) || authorsList.length === 0 || keywordsList.length === 0 || selectedSDGs.length === 0}
                       className="upload-button"
                     >
                       {uploading ? 
