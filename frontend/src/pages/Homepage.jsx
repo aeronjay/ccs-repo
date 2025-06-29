@@ -12,7 +12,9 @@ import {
   FiLogOut,
   FiUser,
   FiThumbsUp,
-  FiMessageCircle
+  FiMessageCircle,
+  FiActivity,
+  FiX
 } from 'react-icons/fi';
 import '../../styles/Homepage.css';
 
@@ -383,7 +385,7 @@ const Homepage = () => {
         <div className="content-container">
           {/* Title and Description */}
           <div className="title-section">
-            <h2>CCS Research Repository</h2>
+            <h2><FiFileText size={24} /> CCS Research Repository</h2>
             <p>Discover, explore, and engage with the latest computer and communication sciences research.</p>
           </div>          {/* Search and Filters */}
           <div className="search-section">
@@ -396,14 +398,14 @@ const Homepage = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="search-input"
                 />
-                <button className="search-btn">Search</button>
+                <button className="search-btn"><FiFileText size={16} /> Search</button>
               </div>              <div className="filters">
                 <div className="filter-dropdown-container" ref={filtersRef}>
                   <button 
                     className={`filter-btn ${showFilters ? 'active' : ''}`}
                     onClick={() => setShowFilters(!showFilters)}
                   >
-                    🔽 Filters {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max || filters.minImpact || filters.minClarity) && <span className="filter-count">({filters.sdgs.length + (filters.publisher ? 1 : 0) + (filters.journal ? 1 : 0) + (filters.yearRange.min ? 1 : 0) + (filters.yearRange.max ? 1 : 0) + (filters.minImpact ? 1 : 0) + (filters.minClarity ? 1 : 0)})</span>}
+                    <FiSettings size={16} /> Filters {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max || filters.minImpact || filters.minClarity) && <span className="filter-count">({filters.sdgs.length + (filters.publisher ? 1 : 0) + (filters.journal ? 1 : 0) + (filters.yearRange.min ? 1 : 0) + (filters.yearRange.max ? 1 : 0) + (filters.minImpact ? 1 : 0) + (filters.minClarity ? 1 : 0)})</span>}
                   </button>
                   
                   {showFilters && (
@@ -507,7 +509,7 @@ const Homepage = () => {
 
                       <div className="filter-actions">
                         <button onClick={clearFilters} className="clear-filters-btn">
-                          Clear All Filters
+                          <FiX size={16} /> Clear All Filters
                         </button>
                       </div>
                     </div>
@@ -519,7 +521,7 @@ const Homepage = () => {
                   disabled={loading}
                   style={{ marginLeft: '10px' }}
                 >
-                  {loading ? '🔄 Loading...' : '🔄 Refresh'}
+                  {loading ? <FiActivity size={16} /> : <FiActivity size={16} />} Refresh
                 </button>
               </div>
             </div>
@@ -542,7 +544,7 @@ const Homepage = () => {
             <div className="active-filters">
               <div className="active-filters-header">
                 <span>Active Filters:</span>
-                <button onClick={clearFilters} className="clear-all-btn">Clear All</button>
+                <button onClick={clearFilters} className="clear-all-btn"><FiX size={14} /> Clear All</button>
               </div>
               <div className="active-filters-list">
                 {filters.sdgs.map(sdg => (
