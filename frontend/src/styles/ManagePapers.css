@@ -213,12 +213,25 @@
 .edit-button {
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   box-shadow: 0 2px 6px rgba(102, 126, 234, 0.3);
+  position: relative;
 }
 
+/* Highlight the edit button for co-authors */
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(66, 153, 225, 0.5);
+  }
+  70% {
+    box-shadow: 0 0 0 5px rgba(66, 153, 225, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(66, 153, 225, 0);
+  }
+}
+
+/* Hover effect for edit button */
 .edit-button:hover {
-  background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+  animation: pulse 1.5s infinite;
 }
 
 .delete-button {
@@ -882,15 +895,40 @@
   order: 99;
 }
 
-/* Add styles for the search input container */
-.search-input-container {
-  margin-bottom: 10px;
-  width: 100%;
+/* Add these badge styles for ownership status */
+.badge {
+  display: inline-block;
+  padding: 0.25em 0.6em;
+  font-size: 75%;
+  font-weight: 700;
+  line-height: 1;
+  text-align: center;
+  white-space: nowrap;
+  vertical-align: baseline;
+  border-radius: 0.25rem;
 }
 
-.search-input {
-  width: 100%;
-  padding: 8px;
-  border-radius: 4px;
-  border: 1px solid #ccc;
+.badge-primary {
+  color: #fff;
+  background-color: #007bff;
+}
+
+.badge-secondary {
+  color: #fff;
+  background-color: #6c757d;
+}
+
+.badge-light {
+  color: #212529;
+  background-color: #f8f9fa;
+}
+
+/* Highlight papers where user is a co-author */
+.co-author-row {
+  background-color: rgba(233, 242, 255, 0.5); /* Light blue background */
+  transition: background-color 0.3s ease;
+}
+
+.co-author-row:hover {
+  background-color: rgba(233, 242, 255, 0.8); /* Slightly darker on hover */
 }

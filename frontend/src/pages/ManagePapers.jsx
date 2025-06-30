@@ -270,14 +270,14 @@ const ManagePapers = () => {
     setSelectedPaper(paper);
     setShowEditModal(true);
     setTitle(paper.title || '');
-    setAbstract(paper.abstract || '');
+    setAbstract(paper.abstract || paper.description || ''); // Support both abstract and description
     setJournal(paper.journal || '');
     setYear(paper.year || new Date().getFullYear().toString());
     setPublisher(paper.publisher || '');
     setDoi(paper.doi || '');
     setReferences(paper.references || '');
     setAuthorsList(paper.authors || []);
-    setKeywordsList(paper.keywords || []);
+    setKeywordsList(paper.tags || paper.keywords || []); // Support both tags and keywords
     setSelectedSDGs(paper.sdgs?.map(sdg => sdg.id || sdg) || []);
     setIsPublished(paper.isPublished || false);
     setConferenceProceeding(paper.conferenceProceeding || false);
@@ -285,6 +285,13 @@ const ManagePapers = () => {
     setHasDoi(!!paper.doi);
     setHasConference(paper.conferenceProceeding || false);
     setAuthorSearchTerm('');
+    
+    // Show a message indicating edit mode and role
+    if (paper.isOwner) {
+      setMessage('You are editing this paper as the main author.');
+    } else if (paper.isCoAuthor) {
+      setMessage('You are editing this paper as a co-author.');
+    }
   };
 
   const closeEditModal = () => {
@@ -468,24 +475,35 @@ const ManagePapers = () => {
       const updatedData = {
         title,
         abstract,
+        description: abstract, // For backward compatibility
         journal: isPublished ? journal : '',
         isPublished,
         year,
         publisher: isPublished && hasPublisher ? publisher : '',
         authors: authorsList,
         tags: keywordsList,
+        keywords: keywordsList, // For backward compatibility
         sdgs: selectedSDGs,
         doi: isPublished && hasDoi ? doi : '',
         references,
         conferenceProceeding: isPublished && hasConference
       };
 
-      await paperService.updatePaper(selectedPaper.id, userId, updatedData);
-      setMessage('Paper updated successfully!');
+      const result = await paperService.updatePaper(selectedPaper.id, userId, updatedData);
+      
+      // Show specific success message based on user's role
+      if (selectedPaper.isOwner) {
+        setMessage('Paper updated successfully as main author!');
+      } else if (selectedPaper.isCoAuthor) {
+        setMessage('Paper updated successfully as co-author!');
+      } else {
+        setMessage('Paper updated successfully!');
+      }
+      
       closeEditModal();
       loadPapers(); // Refresh the list
     } catch (error) {
-      setMessage('Update failed: ' + error.message);
+      setMessage('Update failed: ' + (error.message || 'Unknown error'));
     } finally {
       setUploading(false);
     }
@@ -649,19 +667,23 @@ const ManagePapers = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {papers.map((paper) => (
-                      <tr key={paper.id} className="paper-row">
-                        <td className="paper-title-cell">
+                    {papers.map((paper, index) => (
+                      <tr key={index} className={paper.isCoAuthor ? 'co-author-row' : ''}>
+                        <td>
                           <div className="paper-title">{paper.title}</div>
-                          {paper.tags && paper.tags.length > 0 && (
-                            <div className="paper-tags">
-                              {paper.tags.map((tag, index) => (
-                                <span key={index} className="paper-tag">
-                                  {tag}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          <div className="paper-tags">
+                            {paper.tags && paper.tags.length > 0 ? (
+                              paper.tags.map((tag, i) => (
+                                <span key={i} className="tag">{tag}</span>
+                              ))
+                            ) : paper.keywords && paper.keywords.length > 0 ? (
+                              paper.keywords.map((keyword, i) => (
+                                <span key={i} className="tag">{keyword}</span>
+                              ))
+                            ) : (
+                              <span className="no-tags">No keywords</span>
+                            )}
+                          </div>
                         </td>
                         <td>
                           {paper.journal || 'N/A'}
@@ -689,24 +711,33 @@ const ManagePapers = () => {
                           {formatDate(paper.uploadDate)}
                         </td>
                         <td>
-                          {paper.isOwner ? "Main Author" : "Co-author"}
+                          {paper.isOwner ? (
+                            <span className="badge badge-primary">Main Author</span>
+                          ) : paper.isCoAuthor ? (
+                            <span className="badge badge-secondary">Co-author</span>
+                          ) : (
+                            <span className="badge badge-light">Contributor</span>
+                          )}
                         </td>
                         <td className="actions-cell">
                           <button
-                            onClick={() => handleDownload(paper)}
+                            onClick={() => handleDownload(paper)
+                            }
                             className="action-button download-button"
                             title="Download Paper"
                           >
                             <i className="fas fa-download"></i>
                           </button>
-                          {/* Allow co-authors to edit the paper but only owners can delete */}
-                          <button
-                            onClick={() => openEditModal(paper)}
-                            className="action-button edit-button"
-                            title="Edit Paper"
-                          >
-                            <i className="fas fa-edit"></i>
-                          </button>
+                          {/* Edit button is available for both owners and co-authors */}
+                          {(paper.isOwner || paper.isCoAuthor) && (
+                            <button
+                              onClick={() => openEditModal(paper)}
+                              className="action-button edit-button"
+                              title={paper.isOwner ? "Edit Paper" : "Edit as Co-author"}
+                            >
+                              <i className="fas fa-edit"></i>
+                            </button>
+                          )}
                           {paper.isOwner && (
                             <button
                               onClick={() => handleDelete(paper)}
@@ -1164,7 +1195,14 @@ const ManagePapers = () => {
             <div className="modal-overlay">
               <div className="modal-container">
                 <div className="modal-header">
-                  <h2>Edit Research Paper</h2>
+                  <h2>
+                    {selectedPaper.isOwner ? 'Edit Research Paper' : 'Edit Research Paper as Co-author'}
+                    {selectedPaper.isCoAuthor && (
+                      <span className="badge badge-secondary" style={{ marginLeft: '10px', fontSize: '0.7em' }}>
+                        Co-author Mode
+                      </span>
+                    )}
+                  </h2>
                   <button className="close-button" onClick={closeEditModal}>×</button>
                 </div>
                 

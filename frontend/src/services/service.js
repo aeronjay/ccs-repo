@@ -199,10 +199,26 @@ export const paperService = {
   // Update paper (for users)
   updatePaper: async (paperId, userId, paperData) => {
     try {
-      const response = await api.put(`/papers/${paperId}`, {
+      // Ensure all fields are correctly formatted
+      const formattedData = {
         userId,
-        ...paperData
-      });
+        title: paperData.title,
+        description: paperData.abstract, // Map abstract to description for backend compatibility
+        abstract: paperData.abstract,
+        journal: paperData.journal || '',
+        year: paperData.year || new Date().getFullYear().toString(),
+        publisher: paperData.publisher || '',
+        authors: paperData.authors || [],
+        tags: paperData.tags || paperData.keywords || [], // Handle both naming conventions
+        keywords: paperData.keywords || paperData.tags || [],
+        sdgs: paperData.sdgs || [],
+        doi: paperData.doi || '',
+        isPublished: paperData.isPublished || false,
+        references: paperData.references || '',
+        conferenceProceeding: paperData.conferenceProceeding || false
+      };
+
+      const response = await api.put(`/papers/${paperId}`, formattedData);
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to update paper' };

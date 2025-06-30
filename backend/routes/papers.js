@@ -127,29 +127,38 @@ router.get('/user/:userId', async (req, res) => {
       }
     });
     
-    const papers = allPaperFiles.map(file => ({
-      id: file._id,
-      filename: file.filename,
-      title: file.metadata.title,
-      description: file.metadata.description,
-      abstract: file.metadata.description, // For backward compatibility
-      journal: file.metadata.journal,
-      year: file.metadata.year,
-      publisher: file.metadata.publisher || '',
-      authors: file.metadata.authors || [],
-      tags: file.metadata.tags || [],
-      sdgs: file.metadata.sdgs || [],
-      doi: file.metadata.doi,
-      uploadDate: file.metadata.uploadDate,
-      size: file.metadata.size,
-      contentType: file.metadata.contentType,
-      impact: file.metadata.impact || 0,
-      clarity: file.metadata.clarity || 0,
-      likes: file.metadata.likes || 0,
-      dislikes: file.metadata.dislikes || 0,
-      comments: file.metadata.comments || 0,
-      isOwner: file.metadata.userId === userId // Flag to indicate if user is the owner
-    }));
+    const papers = allPaperFiles.map(file => {
+      const isOwner = file.metadata.userId === userId;
+      const isCoAuthor = file.metadata.authors && 
+                        file.metadata.authors.some(author => 
+                          author.userId === userId
+                        );
+      
+      return {
+        id: file._id,
+        filename: file.filename,
+        title: file.metadata.title,
+        description: file.metadata.description,
+        abstract: file.metadata.description, // For backward compatibility
+        journal: file.metadata.journal,
+        year: file.metadata.year,
+        publisher: file.metadata.publisher || '',
+        authors: file.metadata.authors || [],
+        tags: file.metadata.tags || [],
+        sdgs: file.metadata.sdgs || [],
+        doi: file.metadata.doi,
+        uploadDate: file.metadata.uploadDate,
+        size: file.metadata.size,
+        contentType: file.metadata.contentType,
+        impact: file.metadata.impact || 0,
+        clarity: file.metadata.clarity || 0,
+        likes: file.metadata.likes || 0,
+        dislikes: file.metadata.dislikes || 0,
+        comments: file.metadata.comments || 0,
+        isOwner: isOwner, // Flag to indicate if user is the owner
+        isCoAuthor: isCoAuthor && !isOwner // Flag to indicate if user is a co-author (but not the owner)
+      };
+    });
 
     res.json(papers);
   } catch (error) {
@@ -240,7 +249,23 @@ router.delete('/:fileId', async (req, res) => {
 router.put('/:fileId', async (req, res) => {
   try {
     const { fileId } = req.params;
-    const { userId, title, description, journal, year, publisher, authors, tags, sdgs, doi } = req.body;
+    const { 
+      userId, 
+      title, 
+      description, 
+      abstract,
+      journal, 
+      year, 
+      publisher, 
+      authors, 
+      tags, 
+      keywords,
+      sdgs, 
+      doi,
+      isPublished,
+      references,
+      conferenceProceeding
+    } = req.body;
 
     // Find the file first to check ownership
     const files = await gfs.find({ _id: new mongoose.Types.ObjectId(fileId) }).toArray();
@@ -262,20 +287,26 @@ router.put('/:fileId', async (req, res) => {
       return res.status(403).json({ message: 'Access denied' });
     }
 
+    // Use either tags or keywords, whichever is provided
+    const updatedTags = tags || keywords || file.metadata.tags;
+
     // Update metadata in MongoDB directly
     await mongoose.connection.db.collection('papers.files').updateOne(
       { _id: new mongoose.Types.ObjectId(fileId) },
       { 
         $set: { 
           'metadata.title': title || file.metadata.title,
-          'metadata.description': description || file.metadata.description,
+          'metadata.description': description || abstract || file.metadata.description,
           'metadata.journal': journal || file.metadata.journal,
           'metadata.year': year || file.metadata.year,
           'metadata.publisher': publisher || file.metadata.publisher,
           'metadata.authors': authors || file.metadata.authors,
-          'metadata.tags': tags || file.metadata.tags,
+          'metadata.tags': updatedTags,
           'metadata.sdgs': sdgs || file.metadata.sdgs,
-          'metadata.doi': doi || file.metadata.doi
+          'metadata.doi': doi || file.metadata.doi,
+          'metadata.isPublished': isPublished !== undefined ? isPublished : file.metadata.isPublished,
+          'metadata.references': references || file.metadata.references,
+          'metadata.conferenceProceeding': conferenceProceeding !== undefined ? conferenceProceeding : file.metadata.conferenceProceeding
         } 
       }
     );
