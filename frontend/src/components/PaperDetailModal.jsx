@@ -17,16 +17,18 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
 
   useEffect(() => {
     if (isOpen && paperId) {
-      loadPaperDetails();
-      checkDownloadPermission();
+      // Ensure paperId is a primitive value, not an object
+      const id = typeof paperId === 'object' && paperId !== null ? paperId.id : paperId;
+      loadPaperDetails(id);
+      checkDownloadPermission(id);
     }
   }, [isOpen, paperId]);
 
-  const loadPaperDetails = async () => {
+  const loadPaperDetails = async (id) => {
     setLoading(true);
     setError('');
     try {
-      const data = await paperService.getPaperDetails(paperId);
+      const data = await paperService.getPaperDetails(id);
       setPaper(data);
     } catch (error) {
       setError('Failed to load paper details: ' + error.message);
@@ -35,9 +37,9 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
     }
   };
 
-  const checkDownloadPermission = async () => {
+  const checkDownloadPermission = async (id) => {
     try {
-      const permission = await paperService.checkDownloadPermission(paperId, user?.id);
+      const permission = await paperService.checkDownloadPermission(id, user?.id);
       setDownloadPermission(permission);
     } catch (error) {
       console.error('Failed to check download permission:', error);
@@ -50,15 +52,18 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
       return;
     }
 
+    // Ensure we're using a primitive paperId
+    const id = typeof paperId === 'object' && paperId !== null ? paperId.id : paperId;
+    
     setInteractionLoading(true);
     try {
-      const result = await paperService.likePaper(paperId, user.id);
+      const result = await paperService.likePaper(id, user.id);
       setPaper(prev => ({
         ...prev,
         likes: result.likes,
         dislikes: result.dislikes,
         userLikes: [...(prev.userLikes || []), user.id],
-        userDislikes: (prev.userDislikes || []).filter(id => id !== user.id)
+        userDislikes: (prev.userDislikes || []).filter(userId => userId !== user.id)
       }));
     } catch (error) {
       alert(error.message);
@@ -73,15 +78,18 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
       return;
     }
 
+    // Ensure we're using a primitive paperId
+    const id = typeof paperId === 'object' && paperId !== null ? paperId.id : paperId;
+    
     setInteractionLoading(true);
     try {
-      const result = await paperService.dislikePaper(paperId, user.id);
+      const result = await paperService.dislikePaper(id, user.id);
       setPaper(prev => ({
         ...prev,
         likes: result.likes,
         dislikes: result.dislikes,
         userDislikes: [...(prev.userDislikes || []), user.id],
-        userLikes: (prev.userLikes || []).filter(id => id !== user.id)
+        userLikes: (prev.userLikes || []).filter(userId => userId !== user.id)
       }));
     } catch (error) {
       alert(error.message);
@@ -98,9 +106,12 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
 
     if (!newComment.trim()) return;
 
+    // Ensure we're using a primitive paperId
+    const id = typeof paperId === 'object' && paperId !== null ? paperId.id : paperId;
+
     setSubmittingComment(true);
     try {
-      const result = await paperService.addComment(paperId, user.id, user.email, newComment.trim());
+      const result = await paperService.addComment(id, user.id, user.email, newComment.trim());
       setPaper(prev => ({
         ...prev,
         comments: [...(prev.comments || []), result.comment]
@@ -121,9 +132,12 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
 
     if (!replyContent.trim()) return;
 
+    // Ensure we're using a primitive paperId
+    const id = typeof paperId === 'object' && paperId !== null ? paperId.id : paperId;
+
     setSubmittingComment(true);
     try {
-      const result = await paperService.addComment(paperId, user.id, user.email, replyContent.trim(), parentCommentId);
+      const result = await paperService.addComment(id, user.id, user.email, replyContent.trim(), parentCommentId);
       setPaper(prev => ({
         ...prev,
         comments: [...(prev.comments || []), result.comment]
@@ -147,8 +161,11 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
       return;
     }
 
+    // Ensure we're using a primitive paperId
+    const id = typeof paperId === 'object' && paperId !== null ? paperId.id : paperId;
+
     try {
-      const response = await paperService.downloadPaper(paperId, user.id);
+      const response = await paperService.downloadPaper(id, user.id);
       
       // Create blob and download
       const blob = new Blob([response.data], { type: paper.contentType });

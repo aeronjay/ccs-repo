@@ -167,7 +167,9 @@ const Homepage = () => {
   };
 
   const handlePaperTitleClick = (paperId) => {
-    setSelectedPaperId(paperId);
+    // Ensure paperId is a string or number, not an object
+    const id = typeof paperId === 'object' && paperId !== null ? paperId.id : paperId;
+    setSelectedPaperId(id);
     setIsModalOpen(true);
   };
 
@@ -182,9 +184,9 @@ const Homepage = () => {
       (paper.authors && paper.authors.some(author => 
         typeof author === 'object'
           ? (author.name && author.name.toLowerCase().includes(searchQuery.toLowerCase()))
-          : String(author).toLowerCase().includes(searchQuery.toLowerCase())
+          : (String(author) || '').toLowerCase().includes(searchQuery.toLowerCase())
       )) ||
-      (paper.tags && paper.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
+      (paper.tags && paper.tags.some(tag => (tag || '').toLowerCase().includes(searchQuery.toLowerCase())));
 
     if (!matchesSearch) return false;
 
@@ -240,9 +242,17 @@ const Homepage = () => {
   });
 
   const renderStarRating = (rating) => {
+    // Ensure rating is a number
+    let numericRating;
+    if (typeof rating === 'object') {
+      numericRating = 0; // Default to 0 for objects
+    } else {
+      numericRating = parseFloat(rating) || 0;
+    }
+
     const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 >= 0.5; // Use >= 0.5 to show half star
+    const fullStars = Math.floor(numericRating);
+    const hasHalfStar = numericRating % 1 >= 0.5; // Use >= 0.5 to show half star
     
     for (let i = 0; i < fullStars; i++) {
       stars.push(<span key={i} className="star filled" aria-hidden="true">★</span>);
@@ -252,7 +262,7 @@ const Homepage = () => {
       stars.push(<span key="half" className="star half" aria-hidden="true">★</span>);
     }
     
-    const emptyStars = 5 - Math.ceil(rating);
+    const emptyStars = 5 - Math.ceil(numericRating);
     for (let i = 0; i < emptyStars; i++) {
       stars.push(<span key={`empty-${i}`} className="star empty" aria-hidden="true">☆</span>);
     }
@@ -260,7 +270,7 @@ const Homepage = () => {
     // Add a visually hidden span for screen readers
     stars.push(
       <span key="screen-reader" className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: '0' }}>
-        {rating} out of 5 stars
+        {numericRating.toString()} out of 5 stars
       </span>
     );
     
@@ -595,30 +605,52 @@ const Homepage = () => {
                     className="paper-title" 
                     onClick={() => handlePaperTitleClick(paper.id)}
                   >
-                    {paper.title}
+                    {typeof paper.title === 'object' ? 
+                      (paper.title.text || paper.title.content || 'Untitled Paper') : 
+                      (paper.title || 'Untitled Paper')}
                   </h3>
                   
                   <div className="paper-meta">
-                    <span className="journal">{paper.journal}</span>
-                    <span className="year">• {paper.year}</span>
-                    <span className="doi">• {paper.doi}</span>
+                    <span className="journal">
+                      {typeof paper.journal === 'object' ? 
+                        (paper.journal.name || 'No Journal') : 
+                        (paper.journal || 'No Journal')}
+                    </span>
+                    <span className="year">• 
+                      {typeof paper.year === 'object' ? 
+                        (paper.year.value || 'No Year') : 
+                        (paper.year || 'No Year')}
+                    </span>
+                    <span className="doi">• 
+                      {typeof paper.doi === 'object' ? 
+                        (paper.doi.value || 'No DOI') : 
+                        (paper.doi || 'No DOI')}
+                    </span>
                   </div>
 
                   <div className="authors">
                     {paper.authors && paper.authors.map((author, index) => (
                       <span key={index} className="author">
                         <FiUser size={14} /> {typeof author === 'object' 
-                          ? author.name || 'Unknown Author' 
-                          : String(author) || 'Unknown Author'}
+                          ? (author.name || 'Unknown Author') 
+                          : (String(author) || 'Unknown Author')}
                       </span>
                     ))}
                   </div>
 
-                  <p className="abstract">{paper.abstract}</p>
+                  <p className="abstract">
+                    {typeof paper.abstract === 'object' ? 
+                      (paper.abstract.text || paper.abstract.content || 'No abstract available.') : 
+                      (paper.abstract || 'No abstract available.')}
+                  </p>
                   
                   <div className="tags">
                     {paper.tags && paper.tags.map((tag, index) => (
-                      <span key={index} className="tag">{tag}</span>
+                      <span key={index} className="tag">
+                        {typeof tag === 'object' ? 
+                          (tag.name || tag.id || 'Unknown Tag') : 
+                          (tag || 'Unknown Tag')}
+                      </span>
                     ))}
                   </div>
 
@@ -626,24 +658,34 @@ const Homepage = () => {
                     <div className="sdgs">
                       <span className="sdgs-label">SDGs:</span>
                       {paper.sdgs.map((sdg, index) => (
-                        <span key={index} className="sdg-tag">{sdg}</span>
+                        <span key={index} className="sdg-tag">
+                          {typeof sdg === 'object' ? 
+                            (sdg.name || sdg.id || 'Unknown SDG') : 
+                            (sdg || 'Unknown SDG')}
+                        </span>
                       ))}
                     </div>
                   )}
 
                   <div className="paper-stats">
                     <div className="stats-left">
-                      <span className="likes"><FiThumbsUp size={16} /> {paper.likes}</span>
-                      <span className="comments"><FiMessageCircle size={16} /> {paper.comments}</span>
+                      <span className="likes"><FiThumbsUp size={16} /> {typeof paper.likes === 'object' ? 
+                        (paper.likes.id ? String(paper.likes.id) : '0') : 
+                        (paper.likes || '0')}</span>
+                      <span className="comments"><FiMessageCircle size={16} /> {Array.isArray(paper.comments) ? 
+                        paper.comments.length : 
+                        (typeof paper.comments === 'object' ? 
+                          (paper.comments.id ? String(paper.comments.id) : '0') : 
+                          (paper.comments || '0'))}</span>
                     </div>
                     <div className="stats-right">
                       <div className="rating">
                         <span>Impact: </span>
-                        {renderStarRating(parseFloat(paper.impact))}
+                        {renderStarRating(typeof paper.impact === 'object' ? 0 : paper.impact || 0)}
                       </div>
                       <div className="rating">
                         <span>Clarity: </span>
-                        {renderStarRating(parseFloat(paper.clarity))}
+                        {renderStarRating(typeof paper.clarity === 'object' ? 0 : paper.clarity || 0)}
                       </div>
                     </div>
                   </div>
