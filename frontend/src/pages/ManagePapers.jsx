@@ -206,6 +206,7 @@ const ManagePapers = () => {
       if (!authorExists) {
         setAuthorsList([...authorsList, authorDetails]);
         setSelectedUserId(''); // Reset selection
+        setAuthorSearchTerm(''); // Also clear the search term after adding
         setMessage('');
       } else {
         setMessage('This user is already added as an author');
@@ -583,39 +584,75 @@ const ManagePapers = () => {
     return (
       <>
         <div className="search-input-container">
-          <input
-            type="text"
-            value={authorSearchTerm}
-            onChange={(e) => setAuthorSearchTerm(e.target.value)}
-            placeholder="Search authors by name, email, or department..."
-            className="form-input search-input"
-          />
-        </div>
-        <div className="multi-input-row">
-          <select
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            className="form-input"
-          >
-            <option value="">Select a user to add as co-author</option>
-            {filteredUsers.map((user) => (
-              <option 
-                key={user._id || user.id} 
-                value={user._id || user.id}
-                disabled={(user._id || user.id) === userId || authorsList.some(author => author.userId === (user._id || user.id))}
+          <div className="search-input-wrapper">
+            <i className="fas fa-search search-icon"></i>
+            <input
+              type="text"
+              value={authorSearchTerm}
+              onChange={(e) => setAuthorSearchTerm(e.target.value)}
+              placeholder="Search authors by name, email, or department..."
+              className="form-input search-input"
+            />
+            {authorSearchTerm && (
+              <button 
+                className="clear-search-btn"
+                onClick={() => setAuthorSearchTerm('')}
+                title="Clear search"
               >
-                {user.lastName || ''}, {user.firstName || ''} ({user.email})
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={addAuthor}
-            className="add-button"
-          >
-            + Add Co-author
-          </button>
+                <i className="fas fa-times"></i>
+              </button>
+            )}
+          </div>
         </div>
+        
+        {/* Searchable Author Results */}
+        {authorSearchTerm.length > 0 && filteredUsers.length > 0 && (
+          <div className="author-search-results">
+            {filteredUsers.map((user) => {
+              const isCurrentUser = (user._id || user.id) === userId;
+              const isAlreadyAdded = authorsList.some(author => author.userId === (user._id || user.id));
+              const userFullName = `${user.lastName || ''}, ${user.firstName || ''}`;
+              
+              return (
+                <div 
+                  key={user._id || user.id}
+                  className={`author-search-item ${isCurrentUser || isAlreadyAdded ? 'disabled' : ''}`}
+                  onClick={() => {
+                    if (!isCurrentUser && !isAlreadyAdded) {
+                      setSelectedUserId(user._id || user.id);
+                      addAuthor();
+                    }
+                  }}
+                  title={
+                    isCurrentUser 
+                      ? "This is you (already added as main author)" 
+                      : isAlreadyAdded 
+                      ? "Already added as a co-author" 
+                      : "Click to add as co-author"
+                  }
+                >
+                  <div className="author-info">
+                    <div className="author-name">{userFullName}</div>
+                    <div className="author-email">{user.email}</div>
+                    {user.department && <div className="author-department">{user.department}</div>}
+                  </div>
+                  {!isCurrentUser && !isAlreadyAdded && (
+                    <div className="add-author-icon">
+                      <i className="fas fa-plus-circle"></i>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
+        
+        {/* Show message when no results found */}
+        {authorSearchTerm.length > 0 && filteredUsers.length === 0 && (
+          <div className="no-authors-found">
+            No authors found matching "{authorSearchTerm}"
+          </div>
+        )}
       </>
     );
   };
