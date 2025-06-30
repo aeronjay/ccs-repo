@@ -96,11 +96,67 @@ export const paperService = {
       // Get all public papers to filter by author
       const papers = await api.get('/papers/public');
       
+      // Extract actual author name (could be different format from what's shown in UI)
+      let processedAuthorName = authorName;
+      
+      // Try to find the exact author object from papers to get any userId or additional info
+      let authorObj = null;
+      for (const paper of papers.data) {
+        if (paper.authors && Array.isArray(paper.authors)) {
+          const matchingAuthor = paper.authors.find(author => {
+            if (typeof author === 'object') {
+              // Try to match by name field if it exists
+              if (author.name && author.name.toLowerCase() === authorName.toLowerCase()) {
+                return true;
+              }
+              
+              // Try first and last name fields if they exist
+              if (author.firstName && author.lastName) {
+                const fullName = `${author.firstName} ${author.lastName}`.toLowerCase();
+                return fullName === authorName.toLowerCase();
+              }
+            } else if (typeof author === 'string') {
+              // Direct string comparison
+              return author.toLowerCase() === authorName.toLowerCase();
+            }
+            return false;
+          });
+          
+          if (matchingAuthor) {
+            authorObj = matchingAuthor;
+            // If we found a matching author with a userId, we can use that for fetching email
+            if (typeof matchingAuthor === 'object' && matchingAuthor.userId) {
+              break;
+            }
+          }
+        }
+      }
+      
       // Filter papers by the author name
       const authorPapers = papers.data.filter(paper => {
         return paper.authors && paper.authors.some(author => {
-          const authorStr = typeof author === 'object' ? author.name : String(author);
-          return authorStr.toLowerCase() === authorName.toLowerCase();
+          if (typeof author === 'object') {
+            // Try to match by name field if it exists
+            if (author.name && author.name.toLowerCase() === authorName.toLowerCase()) {
+              return true;
+            }
+            
+            // Try first and last name fields if they exist
+            if (author.firstName && author.lastName) {
+              const fullName = `${author.firstName} ${author.lastName}`.toLowerCase();
+              return fullName === authorName.toLowerCase();
+            }
+            
+            // Try userId if we have it from authorObj
+            if (authorObj && typeof authorObj === 'object' && authorObj.userId && 
+                author.userId === authorObj.userId) {
+              return true;
+            }
+          } else if (typeof author === 'string') {
+            // Direct string comparison
+            return author.toLowerCase() === authorName.toLowerCase();
+          }
+          return false;
         });
       });
       
@@ -166,11 +222,44 @@ export const paperService = {
           (paper.likes || 0)
       }));
       
+      // Try to get author's email from the database
+      let email = null;
+      try {
+        // If we found an author object with userId, try to get the user directly
+        if (authorObj && typeof authorObj === 'object' && authorObj.userId) {
+          console.log('Trying to get user details by userId:', authorObj.userId);
+          const userResponse = await api.get(`/auth/user/${authorObj.userId}`);
+          if (userResponse.data && userResponse.data.email) {
+            email = userResponse.data.email;
+            console.log('Found email by userId:', email);
+          }
+        }
+        
+        // If we still don't have an email, try by name
+        if (!email) {
+          console.log('Trying to get user details by name:', authorName);
+          const userDetails = await paperService.getUserByName(authorName);
+          if (userDetails && userDetails.length > 0) {
+            // Use the first matching user's email
+            email = userDetails[0].email;
+            console.log('Found email by name search:', email);
+          }
+        }
+      } catch (error) {
+        console.warn('Failed to retrieve author email:', error);
+      }
+      
+      // Fallback to generated email if we can't get it from the database
+      if (!email) {
+        email = `${authorName.toLowerCase().replace(/\s+/g, '.')}@university.edu`;
+        console.log('Using fallback email:', email);
+      }
+      
       // Compile the author data
       const authorData = {
         name: authorName,
         affiliation: 'College of Computer Studies', // Default affiliation
-        // Email is not typically available from paper metadata
+        email: email,
         publicationCount: authorPapers.length,
         totalLikes: totalLikes,
         activityLevel: activityLevel,
@@ -421,6 +510,19 @@ export const userService = {
       return response.data;
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch users' };
+    }
+  },
+
+  // Get user details by name
+  getUserByName: async (name) => {
+    try {
+      console.log('Fetching user details for:', name);
+      const response = await api.get(`/auth/users/by-name/${encodeURIComponent(name)}`);
+      console.log('User details response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user details:', error);
+      throw error.response?.data || { message: 'Failed to fetch user details' };
     }
   },
 };

@@ -420,4 +420,101 @@ router.put('/admin/users/:userId/status', async (req, res) => {
   }
 });
 
+// Get user by name (first name + last name)
+router.get('/users/by-name/:name', async (req, res) => {
+  try {
+    const { name } = req.params;
+    
+    if (!name) {
+      return res.status(400).json({ message: 'Name is required' });
+    }
+    
+    console.log('Searching for user by name:', name);
+    
+    // Split the name to match against first and last name
+    const nameParts = name.split(' ');
+    let query = {};
+    
+    if (nameParts.length === 1) {
+      // If only one name part is provided, search in both first and last name
+      query = {
+        $or: [
+          { firstName: new RegExp(nameParts[0], 'i') },
+          { lastName: new RegExp(nameParts[0], 'i') }
+        ]
+      };
+    } else if (nameParts.length >= 2) {
+      // If multiple name parts, try different matching patterns:
+      // 1. Match first name + last name
+      // 2. Match first name only
+      // 3. Match last name only
+      // 4. Match either name against either field (more flexible matching)
+      query = {
+        $or: [
+          // Exact match with first and last name
+          {
+            firstName: new RegExp(`^${nameParts[0]}$`, 'i'),
+            lastName: new RegExp(`^${nameParts.slice(1).join(' ')}$`, 'i')
+          },
+          // Partial matches
+          { firstName: new RegExp(nameParts[0], 'i') },
+          { lastName: new RegExp(nameParts.slice(1).join(' '), 'i') },
+          // Flexible matching (any part of the name matches any field)
+          { firstName: new RegExp(name, 'i') },
+          { lastName: new RegExp(name, 'i') }
+        ]
+      };
+    }
+    
+    console.log('Query:', JSON.stringify(query));
+    
+    // Find users matching the name
+    const users = await User.find(query).select('firstName lastName email department');
+    
+    console.log('Found users:', users.length);
+    
+    if (users.length === 0) {
+      return res.status(404).json({ message: 'No users found with this name' });
+    }
+    
+    // Return the list of matching users with limited information for privacy
+    res.status(200).json(users);
+  } catch (error) {
+    console.error('Get user by name error:', error);
+    res.status(500).json({ message: 'Failed to retrieve user information' });
+  }
+});
+
+// Get user by ID
+router.get('/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    if (!userId) {
+      return res.status(400).json({ message: 'User ID is required' });
+    }
+    
+    console.log('Fetching user by ID:', userId);
+    
+    // Find user by ID
+    const user = await User.findById(userId).select('firstName lastName email department');
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Return user with limited information for privacy
+    res.status(200).json({
+      id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      department: user.department
+    });
+  } catch (error) {
+    console.error('Get user by ID error:', error);
+    res.status(500).json({ message: 'Failed to retrieve user information' });
+  }
+});
+
 module.exports = router;

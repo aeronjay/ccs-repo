@@ -9,7 +9,8 @@ import {
   FiExternalLink,
   FiBookmark,
   FiCalendar,
-  FiTag
+  FiTag,
+  FiMail
 } from 'react-icons/fi';
 
 const AuthorDetailModal = ({ authorName, isOpen, onClose }) => {
@@ -27,7 +28,9 @@ const AuthorDetailModal = ({ authorName, isOpen, onClose }) => {
     setLoading(true);
     setError('');
     try {
+      console.log('Loading author details for:', name);
       const data = await paperService.getAuthorDetails(name);
+      console.log('Author data received:', data);
       setAuthorData(data);
     } catch (error) {
       setError('Failed to load author details: ' + error.message);
@@ -59,6 +62,11 @@ const AuthorDetailModal = ({ authorName, isOpen, onClose }) => {
               <div className="author-profile-header">
                 <h1 className="author-name">{authorData.name}</h1>
                 <div className="author-affiliation">{authorData.affiliation}</div>
+                {authorData.email && (
+                  <div className="author-email">
+                    <FiMail size={16} /> {authorData.email}
+                  </div>
+                )}
               </div>
 
               <div className="author-stats">

@@ -86,6 +86,11 @@
 .author-email {
   font-size: 0.95rem;
   color: #666;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 4px;
 }
 
 .author-stats {
