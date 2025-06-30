@@ -256,6 +256,7 @@ const ManagePapers = () => {
   };
 
   const openUploadModal = () => {
+    resetForm(); // Call resetForm to initialize the authors list with current user
     setShowUploadModal(true);
     setAuthorSearchTerm('');
   };
