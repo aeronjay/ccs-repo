@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
 import './PaperDetailModal.css';
+import PaperRequestModal from './PaperRequestModal';
 import { 
   FiDownload,
   FiCalendar,
@@ -12,7 +13,8 @@ import {
   FiThumbsDown,
   FiMessageCircle,
   FiX,
-  FiCornerDownLeft
+  FiCornerDownLeft,
+  FiLock
 } from 'react-icons/fi';
 
 const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
@@ -26,6 +28,7 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
   const [submittingComment, setSubmittingComment] = useState(false);
   const [interactionLoading, setInteractionLoading] = useState(false);
   const [downloadPermission, setDownloadPermission] = useState(null);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
 
   useEffect(() => {
     if (isOpen && paperId) {
@@ -168,7 +171,8 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
       if (!user) {
         navigate('/signin');
       } else {
-        alert(downloadPermission?.reason || 'You do not have permission to download this paper');
+        // Open request modal instead of showing alert
+        setIsRequestModalOpen(true);
       }
       return;
     }
@@ -191,6 +195,15 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
       window.URL.revokeObjectURL(url);
     } catch (error) {
       alert('Download failed: ' + error.message);
+    }
+  };
+
+  const handleRequestSubmit = async (paperId, reason) => {
+    try {
+      await paperService.requestPaperAccess(paperId, user.id, reason, paper.title);
+      return true;
+    } catch (error) {
+      throw error;
     }
   };
 
@@ -289,7 +302,9 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                   <FiDownload size={16} /> Download PDF
                 </button>
                 {downloadPermission && !downloadPermission.canDownload && (
-                  <p className="download-message">{downloadPermission.reason}</p>
+                  <p className="download-message">
+                    <FiLock size={14} /> {downloadPermission.reason}
+                  </p>
                 )}
               </div>
 
@@ -383,6 +398,15 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
           ) : null}
         </div>
       </div>
+      
+      {/* Paper Request Modal */}
+      <PaperRequestModal
+        isOpen={isRequestModalOpen}
+        onClose={() => setIsRequestModalOpen(false)}
+        paperId={typeof paperId === 'object' && paperId !== null ? paperId.id : paperId}
+        paperTitle={paper?.title || 'Unknown Paper'}
+        onSubmit={handleRequestSubmit}
+      />
     </div>
   );
 };

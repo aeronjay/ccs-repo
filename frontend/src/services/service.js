@@ -345,6 +345,61 @@ export const paperService = {
     }
   },
 
+  // Request paper access
+  requestPaperAccess: async (paperId, userId, reason, paperTitle) => {
+    try {
+      const response = await api.post('/paper-requests/request', {
+        paperId,
+        userId,
+        reason,
+        paperTitle
+      });
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to submit paper request' };
+    }
+  },
+
+  // Get user's paper requests
+  getUserPaperRequests: async (userId) => {
+    try {
+      const response = await api.get(`/paper-requests/user/${userId}/requests`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to get paper requests' };
+    }
+  },
+
+  // Admin: Get all paper requests
+  getAdminPaperRequests: async () => {
+    try {
+      const response = await api.get('/paper-requests/admin/requests');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to get paper requests' };
+    }
+  },
+
+  // Admin: Get pending paper requests
+  getAdminPendingRequests: async () => {
+    try {
+      const response = await api.get('/paper-requests/admin/requests/pending');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to get pending paper requests' };
+    }
+  },
+
+  // Admin: Process paper request
+  processPaperRequest: async (requestId, data) => {
+    try {
+      const response = await api.put(`/paper-requests/admin/requests/${requestId}`, data);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to process paper request' };
+    }
+  },
+
   // Like paper
   likePaper: async (paperId, userId) => {
     try {

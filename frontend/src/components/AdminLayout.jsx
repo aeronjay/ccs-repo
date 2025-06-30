@@ -60,6 +60,11 @@ import './AdminLayout.css';  const AdminLayout = ({ children }) => {
       icon: FiClock
     },
     {
+      path: '/admin/paper-requests',
+      name: 'Paper Requests',
+      icon: FiFileText
+    },
+    {
       path: '/admin/manage-papers',
       name: 'Manage Papers',
       icon: FiFileText
