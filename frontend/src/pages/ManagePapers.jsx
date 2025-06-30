@@ -699,23 +699,22 @@ const ManagePapers = () => {
                           >
                             <i className="fas fa-download"></i>
                           </button>
+                          {/* Allow co-authors to edit the paper but only owners can delete */}
+                          <button
+                            onClick={() => openEditModal(paper)}
+                            className="action-button edit-button"
+                            title="Edit Paper"
+                          >
+                            <i className="fas fa-edit"></i>
+                          </button>
                           {paper.isOwner && (
-                            <>
-                              <button
-                                onClick={() => openEditModal(paper)}
-                                className="action-button edit-button"
-                                title="Edit Paper"
-                              >
-                                <i className="fas fa-edit"></i>
-                              </button>
-                              <button
-                                onClick={() => handleDelete(paper)}
-                                className="action-button delete-button"
-                                title="Delete Paper"
-                              >
-                                <i className="fas fa-trash"></i>
-                              </button>
-                            </>
+                            <button
+                              onClick={() => handleDelete(paper)}
+                              className="action-button delete-button"
+                              title="Delete Paper"
+                            >
+                              <i className="fas fa-trash"></i>
+                            </button>
                           )}
                         </td>
                       </tr>

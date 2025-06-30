@@ -251,8 +251,14 @@ router.put('/:fileId', async (req, res) => {
 
     const file = files[0];
 
-    // Check if user owns the file
-    if (file.metadata.userId !== userId) {
+    // Check if user owns the file or is a co-author
+    const isOwner = file.metadata.userId === userId;
+    const isCoAuthor = file.metadata.authors && 
+                      file.metadata.authors.some(author => 
+                        author.userId === userId
+                      );
+    
+    if (!isOwner && !isCoAuthor) {
       return res.status(403).json({ message: 'Access denied' });
     }
 
