@@ -2,6 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
 import './PaperDetailModal.css';
+import { 
+  FiDownload,
+  FiCalendar,
+  FiFileText,
+  FiLink,
+  FiUser,
+  FiThumbsUp,
+  FiThumbsDown,
+  FiMessageCircle,
+  FiX,
+  FiCornerDownLeft
+} from 'react-icons/fi';
 
 const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
   const navigate = useNavigate();
@@ -182,27 +194,6 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
     }
   };
 
-  const renderStarRating = (rating) => {
-    const stars = [];
-    const fullStars = Math.floor(rating);
-    const hasHalfStar = rating % 1 !== 0;
-    
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<span key={i} className="star filled">★</span>);
-    }
-    
-    if (hasHalfStar) {
-      stars.push(<span key="half" className="star half">★</span>);
-    }
-    
-    const emptyStars = 5 - Math.ceil(rating);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(<span key={`empty-${i}`} className="star empty">☆</span>);
-    }
-    
-    return stars;
-  };
-
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -228,7 +219,7 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
       <div className="modal-container" onClick={(e) => e.stopPropagation()}>
         <div className="modal-header">
           <button className="back-button" onClick={onClose}>
-            ← Back to search results
+            <FiX size={20} /> Close
           </button>
         </div>
 
@@ -242,14 +233,14 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
               <div className="paper-header">
                 <h1 className="paper-title">{paper.title}</h1>
                 <div className="paper-meta">
-                  <span className="paper-year">📅 {paper.year}</span>
-                  <span className="paper-journal">📄 {paper.journal}</span>
-                  <span className="paper-doi">🔗 {paper.doi}</span>
+                  <span className="paper-year"><FiCalendar size={16} /> {paper.year}</span>
+                  <span className="paper-journal"><FiFileText size={16} /> {paper.journal}</span>
+                  {paper.doi && <span className="paper-doi"><FiLink size={16} /> {paper.doi}</span>}
                 </div>
                 <div className="paper-authors">
                   {paper.authors && paper.authors.map((author, index) => (
                     <span key={index} className="author-badge">
-                      👤 {typeof author === 'object' 
+                      <FiUser size={16} /> {typeof author === 'object' 
                         ? author.name || 'Unknown Author' 
                         : String(author) || 'Unknown Author'}
                     </span>
@@ -278,27 +269,16 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                     onClick={handleLike}
                     disabled={interactionLoading}
                   >
-                    👍 {paper.likes || 0} likes
+                    <FiThumbsUp size={16} /> {paper.likes || 0}
                   </button>
                   <button 
                     className={`dislike-btn ${paper.userDislikes?.includes(user?.id) ? 'active' : ''}`}
                     onClick={handleDislike}
                     disabled={interactionLoading}
                   >
-                    👎 {paper.dislikes || 0}
+                    <FiThumbsDown size={16} /> {paper.dislikes || 0}
                   </button>
-                  <span className="comments-count">💬 {paper.comments?.length || 0} Comments</span>
-                </div>
-
-                <div className="rating-display">
-                  <div className="rating-item">
-                    <span>Clarity: </span>
-                    <div className="stars">{renderStarRating(parseFloat(paper.clarity || 0))}</div>
-                  </div>
-                  <div className="rating-item">
-                    <span>Relevance: </span>
-                    <div className="stars">{renderStarRating(parseFloat(paper.impact || 0))}</div>
-                  </div>
+                  <span className="comments-count"><FiMessageCircle size={16} /> {paper.comments?.length || 0} Comments</span>
                 </div>
 
                 <button 
@@ -306,7 +286,7 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                   onClick={handleDownload}
                   disabled={!downloadPermission}
                 >
-                  📥 Download PDF
+                  <FiDownload size={16} /> Download PDF
                 </button>
                 {downloadPermission && !downloadPermission.canDownload && (
                   <p className="download-message">{downloadPermission.reason}</p>
@@ -344,7 +324,7 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                   {getMainComments().map(comment => (
                     <div key={comment.id} className="comment">
                       <div className="comment-header">
-                        <span className="comment-author">👤 {comment.userEmail}</span>
+                        <span className="comment-author"><FiUser size={16} /> {comment.userEmail}</span>
                         <span className="comment-date">{formatDate(comment.timestamp)}</span>
                       </div>
                       <div className="comment-content">{comment.content}</div>
@@ -354,7 +334,7 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                           className="reply-btn"
                           onClick={() => setReplyToComment(comment.id)}
                         >
-                          ↩️ Reply
+                          <FiCornerDownLeft size={16} /> Reply
                         </button>
                       )}
 
@@ -388,7 +368,7 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                         {getReplies(comment.id).map(reply => (
                           <div key={reply.id} className="reply">
                             <div className="comment-header">
-                              <span className="comment-author">👤 {reply.userEmail}</span>
+                              <span className="comment-author"><FiUser size={16} /> {reply.userEmail}</span>
                               <span className="comment-date">{formatDate(reply.timestamp)}</span>
                             </div>
                             <div className="comment-content">{reply.content}</div>

@@ -90,6 +90,100 @@ export const paperService = {
     }
   },
 
+  // Get author details
+  getAuthorDetails: async (authorName) => {
+    try {
+      // Get all public papers to filter by author
+      const papers = await api.get('/papers/public');
+      
+      // Filter papers by the author name
+      const authorPapers = papers.data.filter(paper => {
+        return paper.authors && paper.authors.some(author => {
+          const authorStr = typeof author === 'object' ? author.name : String(author);
+          return authorStr.toLowerCase() === authorName.toLowerCase();
+        });
+      });
+      
+      // Calculate author statistics
+      const totalLikes = authorPapers.reduce((sum, paper) => {
+        const likes = typeof paper.likes === 'object' ? 
+          (paper.likes.id ? parseInt(paper.likes.id) : 0) : 
+          (parseInt(paper.likes) || 0);
+        return sum + likes;
+      }, 0);
+      
+      // Extract research interests (tags) from all papers
+      const allTags = new Set();
+      authorPapers.forEach(paper => {
+        if (paper.tags && Array.isArray(paper.tags)) {
+          paper.tags.forEach(tag => {
+            const tagStr = typeof tag === 'object' ? (tag.name || tag.id || '') : (tag || '');
+            if (tagStr) allTags.add(tagStr);
+          });
+        }
+      });
+      
+      // Determine activity level based on number of papers and recency
+      let activityLevel = 'Low';
+      if (authorPapers.length > 10) {
+        activityLevel = 'High';
+      } else if (authorPapers.length > 5) {
+        activityLevel = 'Medium';
+      }
+      
+      // Find most recent paper year to check if active recently
+      const currentYear = new Date().getFullYear();
+      const recentPapers = authorPapers.filter(paper => {
+        const year = typeof paper.year === 'object' ? 
+          (paper.year.value || 0) : 
+          (parseInt(paper.year) || 0);
+        return year >= currentYear - 2; // Active in last 2 years
+      });
+      
+      if (recentPapers.length > 0) {
+        // Boost activity level if recently active
+        if (activityLevel === 'Low') activityLevel = 'Medium';
+        else if (activityLevel === 'Medium') activityLevel = 'High';
+      }
+      
+      // Format the papers data for display
+      const formattedPapers = authorPapers.map(paper => ({
+        id: paper.id || paper._id,
+        title: typeof paper.title === 'object' ? 
+          (paper.title.text || paper.title.content || 'Untitled Paper') : 
+          (paper.title || 'Untitled Paper'),
+        journal: typeof paper.journal === 'object' ? 
+          (paper.journal.name || 'No Journal') : 
+          (paper.journal || 'No Journal'),
+        year: typeof paper.year === 'object' ? 
+          (paper.year.value || 'No Year') : 
+          (paper.year || 'No Year'),
+        doi: typeof paper.doi === 'object' ? 
+          (paper.doi.value || 'No DOI') : 
+          (paper.doi || 'No DOI'),
+        likes: typeof paper.likes === 'object' ? 
+          (paper.likes.id ? paper.likes.id : 0) : 
+          (paper.likes || 0)
+      }));
+      
+      // Compile the author data
+      const authorData = {
+        name: authorName,
+        affiliation: 'College of Computer Studies', // Default affiliation
+        // Email is not typically available from paper metadata
+        publicationCount: authorPapers.length,
+        totalLikes: totalLikes,
+        activityLevel: activityLevel,
+        researchInterests: Array.from(allTags),
+        papers: formattedPapers
+      };
+      
+      return authorData;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch author details' };
+    }
+  },
+
   // Get user's papers
   getUserPapers: async (userId) => {
     try {

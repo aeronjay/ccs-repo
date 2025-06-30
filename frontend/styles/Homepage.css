@@ -1,10 +1,11 @@
-/* Homepage Styles with Admin Theme */
+/* Homepage Styles with Professional Theme */
 :root {
-  --royal-velvet: #663399;
-  --royal-velvet-light: #8a4bbf;
-  --royal-velvet-dark: #4d2673;
-  --royal-velvet-bg: #f8f5ff;
-  --royal-accent: #9966cc;
+  --primary-color: #2c3e50;
+  --primary-light: #34495e;
+  --primary-dark: #1a252f;
+  --primary-bg: #f8f9fa;
+  --accent-color: #3498db;
+  --accent-hover: #2980b9;
   --white: #ffffff;
   --light-gray: #f8f9fa;
   --medium-gray: #e9ecef;
@@ -15,11 +16,11 @@
   --warning: #ffc107;
   --danger: #dc3545;
   --info: #17a2b8;
-  --shadow: 0 4px 12px rgba(102, 51, 153, 0.15);
-  --shadow-light: 0 2px 8px rgba(102, 51, 153, 0.1);
-  --shadow-heavy: 0 8px 24px rgba(102, 51, 153, 0.2);
-  --border-radius: 12px;
-  --border-radius-small: 8px;
+  --shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-light: 0 2px 8px rgba(0, 0, 0, 0.05);
+  --shadow-heavy: 0 8px 24px rgba(0, 0, 0, 0.15);
+  --border-radius: 6px;
+  --border-radius-small: 4px;
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -32,9 +33,9 @@
 
 /* Header Styles */
 .header {
-  background: linear-gradient(180deg, var(--royal-velvet) 0%, var(--royal-velvet-dark) 100%);
+  background: linear-gradient(180deg, var(--primary-color) 0%, var(--primary-dark) 100%);
   color: var(--white);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   box-shadow: var(--shadow);
 }
 
@@ -50,9 +51,8 @@
 .logo-section h1 {
   margin: 0;
   font-size: 1.5rem;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--white);
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
   letter-spacing: -0.5px;
 }
 

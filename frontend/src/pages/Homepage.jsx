@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
 import PaperDetailModal from '../components/PaperDetailModal';
+import AuthorDetailModal from '../components/AuthorDetailModal';
 import { 
   FiBarChart2, 
   FiUsers, 
@@ -28,14 +29,14 @@ const Homepage = () => {
   const [error, setError] = useState('');
   const [selectedPaperId, setSelectedPaperId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedAuthor, setSelectedAuthor] = useState(null);
+  const [isAuthorModalOpen, setIsAuthorModalOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [filters, setFilters] = useState({
     sdgs: [],
     yearRange: { min: '', max: '' },
     publisher: '',
-    journal: '',
-    minImpact: '',
-    minClarity: ''
+    journal: ''
   });
   const filtersRef = useRef(null);
 
@@ -108,9 +109,7 @@ const Homepage = () => {
       sdgs: [],
       yearRange: { min: '', max: '' },
       publisher: '',
-      journal: '',
-      minImpact: '',
-      minClarity: ''
+      journal: ''
     });
   };
   const getAvailableSDGs = () => {
@@ -173,10 +172,25 @@ const Homepage = () => {
     setIsModalOpen(true);
   };
 
+  const handleAuthorClick = (author) => {
+    const authorName = typeof author === 'object' 
+      ? (author.name || 'Unknown Author') 
+      : (String(author) || 'Unknown Author');
+    
+    setSelectedAuthor(authorName);
+    setIsAuthorModalOpen(true);
+  };
+
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedPaperId(null);
   };
+
+  const handleCloseAuthorModal = () => {
+    setIsAuthorModalOpen(false);
+    setSelectedAuthor(null);
+  };
+
   const filteredPapers = papers.filter(paper => {
     // Text search
     const matchesSearch = searchQuery === '' || 
@@ -215,16 +229,6 @@ const Homepage = () => {
       return false;
     }
 
-    // Impact rating filter
-    if (filters.minImpact && parseFloat(paper.impact) < parseFloat(filters.minImpact)) {
-      return false;
-    }
-
-    // Clarity rating filter
-    if (filters.minClarity && parseFloat(paper.clarity) < parseFloat(filters.minClarity)) {
-      return false;
-    }
-
     return true;
   });
 
@@ -232,57 +236,17 @@ const Homepage = () => {
     switch (sortBy) {
       case 'Date':
         return parseInt(b.year) - parseInt(a.year);
-      case 'Impact':
-        return b.impact - a.impact;
-      case 'Clarity':
-        return b.clarity - a.clarity;
       default:
         return 0;
     }
   });
-
-  const renderStarRating = (rating) => {
-    // Ensure rating is a number
-    let numericRating;
-    if (typeof rating === 'object') {
-      numericRating = 0; // Default to 0 for objects
-    } else {
-      numericRating = parseFloat(rating) || 0;
-    }
-
-    const stars = [];
-    const fullStars = Math.floor(numericRating);
-    const hasHalfStar = numericRating % 1 >= 0.5; // Use >= 0.5 to show half star
-    
-    for (let i = 0; i < fullStars; i++) {
-      stars.push(<span key={i} className="star filled" aria-hidden="true">★</span>);
-    }
-    
-    if (hasHalfStar) {
-      stars.push(<span key="half" className="star half" aria-hidden="true">★</span>);
-    }
-    
-    const emptyStars = 5 - Math.ceil(numericRating);
-    for (let i = 0; i < emptyStars; i++) {
-      stars.push(<span key={`empty-${i}`} className="star empty" aria-hidden="true">☆</span>);
-    }
-    
-    // Add a visually hidden span for screen readers
-    stars.push(
-      <span key="screen-reader" className="sr-only" style={{ position: 'absolute', width: '1px', height: '1px', padding: '0', margin: '-1px', overflow: 'hidden', clip: 'rect(0, 0, 0, 0)', whiteSpace: 'nowrap', borderWidth: '0' }}>
-        {numericRating.toString()} out of 5 stars
-      </span>
-    );
-    
-    return stars;
-  };
 
   return (
     <div className="homepage">
       <header className="header">
         <div className="header-content">
           <div className="logo-section">
-            <h1>CCS Research</h1>
+            <h1>CCS Research Repository</h1>
           </div>
           <div className="header-actions">
             {user ? (
@@ -369,9 +333,11 @@ const Homepage = () => {
         <div className="content-container">
           {/* Title and Description */}
           <div className="title-section">
-            <h2><FiFileText size={24} /> CCS Research Repository</h2>
+            <h2><FiFileText size={24} /> Research Repository</h2>
             <p>Discover, explore, and engage with the latest computer and communication sciences research.</p>
-          </div>          {/* Search and Filters */}
+          </div>          
+          
+          {/* Search and Filters */}
           <div className="search-section">
             <div className="search-container">
               <div className="search-input-wrapper">
@@ -383,13 +349,14 @@ const Homepage = () => {
                   className="search-input"
                 />
                 <button className="search-btn"><FiFileText size={16} /> Search</button>
-              </div>              <div className="filters">
+              </div>              
+              <div className="filters">
                 <div className="filter-dropdown-container" ref={filtersRef}>
                   <button 
                     className={`filter-btn ${showFilters ? 'active' : ''}`}
                     onClick={() => setShowFilters(!showFilters)}
                   >
-                    <FiSettings size={16} /> Filters {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max || filters.minImpact || filters.minClarity) && <span className="filter-count">({filters.sdgs.length + (filters.publisher ? 1 : 0) + (filters.journal ? 1 : 0) + (filters.yearRange.min ? 1 : 0) + (filters.yearRange.max ? 1 : 0) + (filters.minImpact ? 1 : 0) + (filters.minClarity ? 1 : 0)})</span>}
+                    <FiSettings size={16} /> Filters {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max) && <span className="filter-count">({filters.sdgs.length + (filters.publisher ? 1 : 0) + (filters.journal ? 1 : 0) + (filters.yearRange.min ? 1 : 0) + (filters.yearRange.max ? 1 : 0)})</span>}
                   </button>
                   
                   {showFilters && (
@@ -459,38 +426,6 @@ const Homepage = () => {
                         </select>
                       </div>
 
-                      <div className="filter-section">
-                        <h4>Minimum Impact Rating</h4>
-                        <select
-                          value={filters.minImpact}
-                          onChange={(e) => handleFilterChange('minImpact', e.target.value)}
-                          className="filter-select"
-                        >
-                          <option value="">Any Rating</option>
-                          <option value="1">1+ Stars</option>
-                          <option value="2">2+ Stars</option>
-                          <option value="3">3+ Stars</option>
-                          <option value="4">4+ Stars</option>
-                          <option value="5">5 Stars</option>
-                        </select>
-                      </div>
-
-                      <div className="filter-section">
-                        <h4>Minimum Clarity Rating</h4>
-                        <select
-                          value={filters.minClarity}
-                          onChange={(e) => handleFilterChange('minClarity', e.target.value)}
-                          className="filter-select"
-                        >
-                          <option value="">Any Rating</option>
-                          <option value="1">1+ Stars</option>
-                          <option value="2">2+ Stars</option>
-                          <option value="3">3+ Stars</option>
-                          <option value="4">4+ Stars</option>
-                          <option value="5">5 Stars</option>
-                        </select>
-                      </div>
-
                       <div className="filter-actions">
                         <button onClick={clearFilters} className="clear-filters-btn">
                           <FiX size={16} /> Clear All Filters
@@ -524,7 +459,7 @@ const Homepage = () => {
           </div>
 
           {/* Active Filters Display */}
-          {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max || filters.minImpact || filters.minClarity) && (
+          {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max) && (
             <div className="active-filters">
               <div className="active-filters-header">
                 <span>Active Filters:</span>
@@ -555,18 +490,6 @@ const Homepage = () => {
                     <button onClick={() => handleFilterChange('yearRange', { min: '', max: '' })} className="remove-filter">×</button>
                   </span>
                 )}
-                {filters.minImpact && (
-                  <span className="active-filter">
-                    Min Impact: {filters.minImpact}+
-                    <button onClick={() => handleFilterChange('minImpact', '')} className="remove-filter">×</button>
-                  </span>
-                )}
-                {filters.minClarity && (
-                  <span className="active-filter">
-                    Min Clarity: {filters.minClarity}+
-                    <button onClick={() => handleFilterChange('minClarity', '')} className="remove-filter">×</button>
-                  </span>
-                )}
               </div>
             </div>
           )}
@@ -582,8 +505,6 @@ const Homepage = () => {
                 className="sort-select"
               >
                 <option value="Date">Date</option>
-                <option value="Impact">Impact</option>
-                <option value="Clarity">Clarity</option>
               </select>
             </div>
           </div>
@@ -630,7 +551,14 @@ const Homepage = () => {
 
                   <div className="authors">
                     {paper.authors && paper.authors.map((author, index) => (
-                      <span key={index} className="author">
+                      <span 
+                        key={index} 
+                        className="author"
+                        onClick={() => handleAuthorClick(author)}
+                        role="button"
+                        tabIndex={0}
+                        style={{ cursor: 'pointer' }}
+                      >
                         <FiUser size={14} /> {typeof author === 'object' 
                           ? (author.name || 'Unknown Author') 
                           : (String(author) || 'Unknown Author')}
@@ -678,16 +606,6 @@ const Homepage = () => {
                           (paper.comments.id ? String(paper.comments.id) : '0') : 
                           (paper.comments || '0'))}</span>
                     </div>
-                    <div className="stats-right">
-                      <div className="rating">
-                        <span>Impact: </span>
-                        {renderStarRating(typeof paper.impact === 'object' ? 0 : paper.impact || 0)}
-                      </div>
-                      <div className="rating">
-                        <span>Clarity: </span>
-                        {renderStarRating(typeof paper.clarity === 'object' ? 0 : paper.clarity || 0)}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -702,6 +620,13 @@ const Homepage = () => {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         user={user}
+      />
+
+      {/* Author Detail Modal */}
+      <AuthorDetailModal
+        authorName={selectedAuthor}
+        isOpen={isAuthorModalOpen}
+        onClose={handleCloseAuthorModal}
       />
     </div>
   );
