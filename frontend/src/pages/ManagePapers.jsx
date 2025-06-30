@@ -1040,19 +1040,6 @@ const ManagePapers = () => {
                     )}
                   </div>
 
-                  {!isPublished && (
-                    <div className="form-group">
-                      <label className="form-label">DOI</label>
-                      <input
-                        type="text"
-                        value={doi}
-                        onChange={(e) => setDoi(e.target.value)}
-                        className="form-input"
-                        placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
-                      />
-                    </div>
-                  )}
-
                   {/* Conference Proceeding with Radio Buttons - Only shown when paper is published */}
                   {isPublished && (
                     <div className="form-group">
@@ -1486,19 +1473,6 @@ const ManagePapers = () => {
                       </div>
                     )}
                   </div>
-
-                  {!isPublished && (
-                    <div className="form-group">
-                      <label className="form-label">DOI</label>
-                      <input
-                        type="text"
-                        value={doi}
-                        onChange={(e) => setDoi(e.target.value)}
-                        className="form-input"
-                        placeholder="e.g., 10.1000/182 (leave blank to auto-generate)"
-                      />
-                    </div>
-                  )}
 
                   {/* Conference Proceeding with Radio Buttons - Only shown when paper is published */}
                   {isPublished && (
