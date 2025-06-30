@@ -232,7 +232,9 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                 <div className="paper-authors">
                   {paper.authors && paper.authors.map((author, index) => (
                     <span key={index} className="author-badge">
-                      👤 {author}
+                      👤 {typeof author === 'object' 
+                        ? author.name || 'Unknown Author' 
+                        : String(author) || 'Unknown Author'}
                     </span>
                   ))}
                 </div>

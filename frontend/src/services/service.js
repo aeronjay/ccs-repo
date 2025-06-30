@@ -301,7 +301,17 @@ export const userService = {
     } catch (error) {
       throw error.response?.data || { message: 'Failed to update user status' };
     }
-  }
+  },
+
+  // Get all users for co-author selection
+  getAllUsersForCoAuthors: async () => {
+    try {
+      const response = await api.get('/papers/get-users-for-author-selection');
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to fetch users' };
+    }
+  },
 };
 
 // Export the api instance for other potential uses

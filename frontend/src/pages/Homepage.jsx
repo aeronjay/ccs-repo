@@ -179,8 +179,12 @@ const Homepage = () => {
     // Text search
     const matchesSearch = searchQuery === '' || 
       paper.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      paper.authors.some(author => author.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      paper.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+      (paper.authors && paper.authors.some(author => 
+        typeof author === 'object'
+          ? (author.name && author.name.toLowerCase().includes(searchQuery.toLowerCase()))
+          : String(author).toLowerCase().includes(searchQuery.toLowerCase())
+      )) ||
+      (paper.tags && paper.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase())));
 
     if (!matchesSearch) return false;
 
@@ -603,7 +607,9 @@ const Homepage = () => {
                   <div className="authors">
                     {paper.authors && paper.authors.map((author, index) => (
                       <span key={index} className="author">
-                        <FiUser size={14} /> {author}
+                        <FiUser size={14} /> {typeof author === 'object' 
+                          ? author.name || 'Unknown Author' 
+                          : String(author) || 'Unknown Author'}
                       </span>
                     ))}
                   </div>

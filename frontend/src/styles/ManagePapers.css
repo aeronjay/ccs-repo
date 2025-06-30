@@ -881,3 +881,16 @@
   margin-top: 20px;
   order: 99;
 }
+
+/* Add styles for the search input container */
+.search-input-container {
+  margin-bottom: 10px;
+  width: 100%;
+}
+
+.search-input {
+  width: 100%;
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}

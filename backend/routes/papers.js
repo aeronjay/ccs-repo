@@ -106,16 +106,33 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
   }
 });
 
-// Get user's papers
+// Get user's papers (including papers where user is a co-author)
 router.get('/user/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     
-    const files = await gfs.find({ 'metadata.userId': userId }).toArray();      const papers = files.map(file => ({
+    // Find papers where user is the main author
+    const ownedFiles = await gfs.find({ 'metadata.userId': userId }).toArray();
+    
+    // Find papers where user is a co-author
+    const coauthorFiles = await gfs.find({ 'metadata.authors.userId': userId }).toArray();
+    
+    // Combine and remove duplicates
+    const allPaperFiles = [...ownedFiles];
+    
+    // Add co-authored papers if they aren't already included
+    coauthorFiles.forEach(file => {
+      if (!allPaperFiles.some(existingFile => existingFile._id.toString() === file._id.toString())) {
+        allPaperFiles.push(file);
+      }
+    });
+    
+    const papers = allPaperFiles.map(file => ({
       id: file._id,
       filename: file.filename,
       title: file.metadata.title,
       description: file.metadata.description,
+      abstract: file.metadata.description, // For backward compatibility
       journal: file.metadata.journal,
       year: file.metadata.year,
       publisher: file.metadata.publisher || '',
@@ -130,7 +147,8 @@ router.get('/user/:userId', async (req, res) => {
       clarity: file.metadata.clarity || 0,
       likes: file.metadata.likes || 0,
       dislikes: file.metadata.dislikes || 0,
-      comments: file.metadata.comments || 0
+      comments: file.metadata.comments || 0,
+      isOwner: file.metadata.userId === userId // Flag to indicate if user is the owner
     }));
 
     res.json(papers);
@@ -154,9 +172,17 @@ router.get('/download/:fileId', async (req, res) => {
 
     const file = files[0];
 
-    // Check if user owns the file (optional security check)
+    // Check if user owns the file or is a co-author
     if (userId && file.metadata.userId !== userId) {
-      return res.status(403).json({ message: 'Access denied' });
+      // Check if user is a co-author
+      const isCoAuthor = file.metadata.authors && 
+                        file.metadata.authors.some(author => 
+                          author.userId === userId
+                        );
+      
+      if (!isCoAuthor) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
     }
 
     // Set response headers
@@ -658,6 +684,21 @@ router.get('/admin/stats', async (req, res) => {
       recentPapers,
       papersByYear
     });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get all users for co-author selection
+router.get('/get-users-for-author-selection', async (req, res) => {
+  try {
+    // Find users with approved status
+    const users = await mongoose.connection.db.collection('users').find(
+      { status: 'approved' },
+      { projection: { password: 0 } } // Exclude password
+    ).toArray();
+    
+    res.json(users);
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
   }

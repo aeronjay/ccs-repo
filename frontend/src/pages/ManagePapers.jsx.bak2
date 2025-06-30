@@ -543,48 +543,6 @@ const ManagePapers = () => {
     return sdg ? sdg.name : `SDG ${sdgId}`;
   };
 
-  // Helper method to render author search UI
-  const renderAuthorSearchUI = () => {
-    return (
-      <>
-        <div className="search-input-container">
-          <input
-            type="text"
-            value={authorSearchTerm}
-            onChange={(e) => setAuthorSearchTerm(e.target.value)}
-            placeholder="Search authors by name, email, or department..."
-            className="form-input search-input"
-          />
-        </div>
-        <div className="multi-input-row">
-          <select
-            value={selectedUserId}
-            onChange={(e) => setSelectedUserId(e.target.value)}
-            className="form-input"
-          >
-            <option value="">Select a user to add as co-author</option>
-            {filteredUsers.map((user) => (
-              <option 
-                key={user._id || user.id} 
-                value={user._id || user.id}
-                disabled={(user._id || user.id) === userId || authorsList.some(author => author.userId === (user._id || user.id))}
-              >
-                {user.lastName || ''}, {user.firstName || ''} ({user.email})
-              </option>
-            ))}
-          </select>
-          <button
-            type="button"
-            onClick={addAuthor}
-            className="add-button"
-          >
-            + Add Co-author
-          </button>
-        </div>
-      </>
-    );
-  };
-
   return (
     <div className="manage-papers-container">
       <div className="page-header">
@@ -669,17 +627,11 @@ const ManagePapers = () => {
                           {paper.year || 'N/A'}
                         </td>
                         <td>
-                          {paper.authors && paper.authors.length > 0 ? (
-                            <div>
-                              {paper.authors.map((author, i) => (
-                                <div key={i}>
-                                  {typeof author === 'object' 
-                                    ? author.name || 'Unknown Author' 
-                                    : String(author) || 'Unknown Author'}
-                                </div>
-                              ))}
-                            </div>
-                          ) : 'No authors listed'}
+                          {paper.authors ? paper.authors.map((author, i) => (
+                            typeof author === 'object' ? 
+                              <div key={i}>{author.name}</div> : 
+                              <div key={i}>{author}</div>
+                          )).join(', ') : 'No authors listed'}
                         </td>
                         <td>
                           <div>{paper.filename}</div>
@@ -837,7 +789,31 @@ const ManagePapers = () => {
                       Authors <span className="required">*</span>
                     </label>
                     <div className="author-input-container">
-                      {renderAuthorSearchUI()}
+                      <div className="multi-input-row">
+                        <select
+                          value={selectedUserId}
+                          onChange={(e) => setSelectedUserId(e.target.value)}
+                          className="form-input"
+                        >
+                          <option value="">Select a user to add as co-author</option>
+                          {allUsers.map((user) => (
+                            <option 
+                              key={user._id || user.id} 
+                              value={user._id || user.id}
+                              disabled={(user._id || user.id) === userId || authorsList.some(author => author.userId === (user._id || user.id))}
+                            >
+                              {user.lastName || ''}, {user.firstName || ''} ({user.email})
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={addAuthor}
+                          className="add-button"
+                        >
+                          + Add Co-author
+                        </button>
+                      </div>
                     </div>
                     <div className="authors-table-container">
                       {authorsList.length > 0 && (
@@ -1284,7 +1260,31 @@ const ManagePapers = () => {
                       Authors <span className="required">*</span>
                     </label>
                     <div className="author-input-container">
-                      {renderAuthorSearchUI()}
+                      <div className="multi-input-row">
+                        <select
+                          value={selectedUserId}
+                          onChange={(e) => setSelectedUserId(e.target.value)}
+                          className="form-input"
+                        >
+                          <option value="">Select a user to add as co-author</option>
+                          {allUsers.map((user) => (
+                            <option 
+                              key={user._id || user.id} 
+                              value={user._id || user.id}
+                              disabled={(user._id || user.id) === userId || authorsList.some(author => author.userId === (user._id || user.id))}
+                            >
+                              {user.lastName || ''}, {user.firstName || ''} ({user.email})
+                            </option>
+                          ))}
+                        </select>
+                        <button
+                          type="button"
+                          onClick={addAuthor}
+                          className="add-button"
+                        >
+                          + Add Co-author
+                        </button>
+                      </div>
                     </div>
                     <div className="authors-table-container">
                       {authorsList.length > 0 && (

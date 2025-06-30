@@ -72,7 +72,11 @@ const AdminManagePapers = () => {
   const filteredPapers = papers.filter(paper =>
     paper.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
     paper.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    paper.authors.some(author => author.toLowerCase().includes(searchTerm.toLowerCase())) ||
+    (paper.authors && paper.authors.some(author => 
+      typeof author === 'object'
+        ? (author.name && author.name.toLowerCase().includes(searchTerm.toLowerCase()))
+        : String(author).toLowerCase().includes(searchTerm.toLowerCase())
+    )) ||
     paper.journal.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
@@ -217,7 +221,11 @@ const AdminManagePapers = () => {
 
                   {paper.authors && paper.authors.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
-                      <strong>Authors:</strong> {paper.authors.join(', ')}
+                      <strong>Authors:</strong> {paper.authors.map(author => 
+                        typeof author === 'object' 
+                          ? author.name || 'Unknown Author'
+                          : String(author) || 'Unknown Author'
+                      ).join(', ')}
                     </div>
                   )}
 
