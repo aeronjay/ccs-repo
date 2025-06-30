@@ -76,6 +76,7 @@ export const paperService = {
       if (additionalData.year) formData.append('year', additionalData.year);
       if (additionalData.authors) formData.append('authors', JSON.stringify(additionalData.authors));
       if (additionalData.tags) formData.append('tags', JSON.stringify(additionalData.tags));
+      if (additionalData.sdgs) formData.append('sdgs', JSON.stringify(additionalData.sdgs));
       if (additionalData.doi) formData.append('doi', additionalData.doi);
 
       const response = await api.post('/papers/upload', formData, {

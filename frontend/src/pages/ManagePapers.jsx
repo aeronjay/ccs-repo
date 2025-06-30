@@ -279,7 +279,23 @@ const ManagePapers = () => {
     setReferences(paper.references || '');
     setAuthorsList(paper.authors || []);
     setKeywordsList(paper.tags || paper.keywords || []); // Support both tags and keywords
-    setSelectedSDGs(paper.sdgs?.map(sdg => sdg.id || sdg) || []);
+    
+    // Fixed: Handle different SDG formats properly
+    let sdgs = [];
+    if (paper.sdgs) {
+      if (Array.isArray(paper.sdgs)) {
+        // Handle array of objects with id property
+        if (paper.sdgs.length > 0 && typeof paper.sdgs[0] === 'object') {
+          sdgs = paper.sdgs.map(sdg => sdg.id || sdg);
+        } 
+        // Handle array of numbers or strings
+        else {
+          sdgs = paper.sdgs.map(sdg => typeof sdg === 'string' ? parseInt(sdg, 10) || sdg : sdg);
+        }
+      }
+    }
+    setSelectedSDGs(sdgs);
+    
     setIsPublished(paper.isPublished || false);
     setConferenceProceeding(paper.conferenceProceeding || false);
     setHasPublisher(!!paper.publisher);
@@ -415,7 +431,7 @@ const ManagePapers = () => {
         publisher: isPublished && hasPublisher ? publisher : '',
         authors: authorsList,
         tags: keywordsList,
-        sdgs: selectedSDGs,
+        sdgs: selectedSDGs.map(sdg => typeof sdg === 'object' ? sdg : { id: sdg }), // Ensure consistent format
         doi: isPublished && hasDoi ? doi : (isPublished && hasDoi ? `DOI-${Date.now()}` : ''), // Generate a simple DOI if not provided but only when published
         references,
         conferenceProceeding: isPublished && hasConference
@@ -484,7 +500,7 @@ const ManagePapers = () => {
         authors: authorsList,
         tags: keywordsList,
         keywords: keywordsList, // For backward compatibility
-        sdgs: selectedSDGs,
+        sdgs: selectedSDGs.map(sdg => typeof sdg === 'object' ? sdg : { id: sdg }), // Ensure consistent format
         doi: isPublished && hasDoi ? doi : '',
         references,
         conferenceProceeding: isPublished && hasConference
