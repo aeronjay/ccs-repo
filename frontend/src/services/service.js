@@ -606,6 +606,19 @@ export const userService = {
       throw error.response?.data || { message: 'Failed to fetch user details' };
     }
   },
+
+  // Get user details by ID
+  getUserById: async (userId) => {
+    try {
+      console.log('Fetching user details for ID:', userId);
+      const response = await api.get(`/auth/user/${userId}`);
+      console.log('User details response:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching user details by ID:', error);
+      throw error.response?.data || { message: 'Failed to fetch user details' };
+    }
+  },
 };
 
 // Export the api instance for other potential uses
