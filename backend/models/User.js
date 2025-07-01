@@ -25,7 +25,8 @@ const userSchema = new mongoose.Schema({
     enum: ['Computer Science', 'Information Technology', 'Faculty']
   },
   studentId: {
-    type: String
+    type: String,
+    required: true
   },
   role: {
     type: String,

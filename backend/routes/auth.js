@@ -139,7 +139,7 @@ router.post('/register', async (req, res) => {
   try {
     const { email, password, firstName, lastName, phoneNumber, department, studentId } = req.body;
 
-    if (!email || !password || !firstName || !lastName || !phoneNumber || !department) {
+    if (!email || !password || !firstName || !lastName || !phoneNumber || !department || !studentId) {
       return res.status(400).json({ message: 'Required fields are missing' });
     }
 

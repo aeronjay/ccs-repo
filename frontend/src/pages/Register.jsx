@@ -135,7 +135,7 @@ const Register = () => {
   };
 
   const validateForm = () => {
-    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.department || !formData.phoneNumber) {
+    if (!formData.firstName || !formData.lastName || !formData.email || !formData.password || !formData.department || !formData.phoneNumber || !formData.studentId) {
       return 'Please fill in all required fields';
     }
 
@@ -315,7 +315,7 @@ const Register = () => {
           </div>
 
           <div className="form-group">
-            <label htmlFor="studentId">Student/Employee ID</label>
+            <label htmlFor="studentId">Student/Employee ID *</label>
             <input
               type="text"
               id="studentId"
@@ -323,6 +323,7 @@ const Register = () => {
               value={formData.studentId}
               onChange={handleChange}
               placeholder="Enter your ID number"
+              required
             />
           </div>
 
