@@ -120,7 +120,12 @@ const Homepage = () => {
     const allSDGs = new Set();
     papers.forEach(paper => {
       if (paper.sdgs) {
-        paper.sdgs.forEach(sdg => allSDGs.add(sdg));
+        paper.sdgs.forEach(sdg => {
+          const sdgName = typeof sdg === 'object' 
+            ? (sdg.name || sdg.id || 'Unknown SDG')
+            : sdg;
+          allSDGs.add(sdgName);
+        });
       }
     });
     
@@ -153,7 +158,10 @@ const Homepage = () => {
     const publishers = new Set();
     papers.forEach(paper => {
       if (paper.publisher) {
-        publishers.add(paper.publisher);
+        const publisherName = typeof paper.publisher === 'object' 
+          ? (paper.publisher.name || paper.publisher.id || 'Unknown Publisher')
+          : paper.publisher;
+        publishers.add(publisherName);
       }
     });
     return Array.from(publishers).sort();
@@ -163,7 +171,10 @@ const Homepage = () => {
     const journals = new Set();
     papers.forEach(paper => {
       if (paper.journal) {
-        journals.add(paper.journal);
+        const journalName = typeof paper.journal === 'object' 
+          ? (paper.journal.name || paper.journal.id || 'Unknown Journal')
+          : paper.journal;
+        journals.add(journalName);
       }
     });
     return Array.from(journals).sort();
@@ -208,39 +219,61 @@ const Homepage = () => {
   const filteredPapers = papers.filter(paper => {
     // Text search
     const matchesSearch = searchQuery === '' || 
-      paper.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (typeof paper.title === 'object' ? 
+        (paper.title.text || paper.title.content || '').toLowerCase().includes(searchQuery.toLowerCase()) :
+        (paper.title || '').toLowerCase().includes(searchQuery.toLowerCase())) ||
       (paper.authors && paper.authors.some(author => 
         typeof author === 'object'
           ? (author.name && author.name.toLowerCase().includes(searchQuery.toLowerCase()))
           : (String(author) || '').toLowerCase().includes(searchQuery.toLowerCase())
       )) ||
-      (paper.tags && paper.tags.some(tag => (tag || '').toLowerCase().includes(searchQuery.toLowerCase())));
+      (paper.tags && paper.tags.some(tag => {
+        const tagName = typeof tag === 'object' ? (tag.name || tag.id || '') : (tag || '');
+        return tagName.toLowerCase().includes(searchQuery.toLowerCase());
+      }));
 
     if (!matchesSearch) return false;
 
     // SDG filter
     if (filters.sdgs.length > 0) {
       const paperSDGs = paper.sdgs || [];
-      const hasMatchingSDG = filters.sdgs.some(sdg => paperSDGs.includes(sdg));
+      const normalizedPaperSDGs = paperSDGs.map(sdg => 
+        typeof sdg === 'object' ? (sdg.name || sdg.id || 'Unknown SDG') : sdg
+      );
+      const hasMatchingSDG = filters.sdgs.some(sdg => normalizedPaperSDGs.includes(sdg));
       if (!hasMatchingSDG) return false;
     }
 
     // Year range filter
-    if (filters.yearRange.min && parseInt(paper.year) < parseInt(filters.yearRange.min)) {
+    const paperYear = typeof paper.year === 'object' ? 
+      (paper.year.value || paper.year.id || 0) : 
+      (paper.year || 0);
+    
+    if (filters.yearRange.min && parseInt(paperYear) < parseInt(filters.yearRange.min)) {
       return false;
     }
-    if (filters.yearRange.max && parseInt(paper.year) > parseInt(filters.yearRange.max)) {
+    if (filters.yearRange.max && parseInt(paperYear) > parseInt(filters.yearRange.max)) {
       return false;
     }
 
     // Publisher filter
-    if (filters.publisher && paper.publisher !== filters.publisher) {
-      return false;
+    if (filters.publisher) {
+      const paperPublisher = typeof paper.publisher === 'object' 
+        ? (paper.publisher.name || paper.publisher.id || 'Unknown Publisher')
+        : paper.publisher;
+      if (paperPublisher !== filters.publisher) {
+        return false;
+      }
     }
 
     // Journal filter
-    if (filters.journal && paper.journal !== filters.journal) {
-      return false;
+    if (filters.journal) {
+      const paperJournal = typeof paper.journal === 'object' 
+        ? (paper.journal.name || paper.journal.id || 'Unknown Journal')
+        : paper.journal;
+      if (paperJournal !== filters.journal) {
+        return false;
+      }
     }
 
     return true;
@@ -249,7 +282,9 @@ const Homepage = () => {
   const sortedPapers = [...filteredPapers].sort((a, b) => {
     switch (sortBy) {
       case 'Date':
-        return parseInt(b.year) - parseInt(a.year);
+        const yearA = typeof a.year === 'object' ? (a.year.value || a.year.id || 0) : (a.year || 0);
+        const yearB = typeof b.year === 'object' ? (b.year.value || b.year.id || 0) : (b.year || 0);
+        return parseInt(yearB) - parseInt(yearA);
       default:
         return 0;
     }
