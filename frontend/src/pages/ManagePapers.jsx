@@ -72,6 +72,27 @@ const ManagePapers = () => {
     }
     return null;
   };
+
+  // Helper function to format user name properly
+  const formatUserName = (user) => {
+    if (!user) return 'Unknown User';
+    
+    const firstName = (user.firstName || '').trim();
+    const lastName = (user.lastName || '').trim();
+    
+    if (firstName && lastName) {
+      return `${lastName}, ${firstName}`;
+    } else if (firstName) {
+      return firstName;
+    } else if (lastName) {
+      return lastName;
+    } else if (user.email) {
+      // Use email as fallback if no name is available
+      return user.email.split('@')[0];
+    } else {
+      return 'Unknown User';
+    }
+  };
   const userId = getUserId();
 
   // Check if user is authenticated
@@ -196,7 +217,7 @@ const ManagePapers = () => {
       // Create author object with user details
       const authorDetails = {
         userId: selectedUser._id || selectedUser.id,
-        name: `${selectedUser.lastName || ''}, ${selectedUser.firstName || ''}`.trim(),
+        name: formatUserName(selectedUser),
         email: selectedUser.email,
         phone: selectedUser.phoneNumber || ''
       };
@@ -227,15 +248,17 @@ const ManagePapers = () => {
   const filteredUsers = allUsers.filter(user => {
     if (!authorSearchTerm) return true; // Show all when no search term
     
-    const fullName = `${user.firstName || ''} ${user.lastName || ''}`.toLowerCase();
-    const reverseName = `${user.lastName || ''} ${user.firstName || ''}`.toLowerCase();
+    const formattedName = formatUserName(user).toLowerCase();
+    const firstName = (user.firstName || '').toLowerCase();
+    const lastName = (user.lastName || '').toLowerCase();
     const email = (user.email || '').toLowerCase();
     const department = (user.department || '').toLowerCase();
     const searchLower = authorSearchTerm.toLowerCase();
     
-    // Search by name, email, or department
-    return fullName.includes(searchLower) || 
-           reverseName.includes(searchLower) || 
+    // Search by formatted name, individual name fields, email, or department
+    return formattedName.includes(searchLower) || 
+           firstName.includes(searchLower) ||
+           lastName.includes(searchLower) ||
            email.includes(searchLower) || 
            department.includes(searchLower);
   });
@@ -331,7 +354,7 @@ const ManagePapers = () => {
     // Initialize authors list with current user if available
     const initialAuthorsList = currentUser ? [{
       userId: currentUserId,
-      name: `${currentUser.lastName || ''}, ${currentUser.firstName || ''}`.trim(),
+      name: formatUserName(currentUser),
       email: currentUser.email,
       phone: currentUser.phoneNumber || ''
     }] : [];
@@ -614,7 +637,7 @@ const ManagePapers = () => {
             {filteredUsers.map((user) => {
               const isCurrentUser = (user._id || user.id) === userId;
               const isAlreadyAdded = authorsList.some(author => author.userId === (user._id || user.id));
-              const userFullName = `${user.lastName || ''}, ${user.firstName || ''}`;
+              const userFullName = formatUserName(user);
               
               return (
                 <div 
