@@ -4,6 +4,7 @@ import { paperService } from '../services/service';
 import PaperDetailModal from '../components/PaperDetailModal';
 import AuthorDetailModal from '../components/AuthorDetailModal';
 import CitationModal from '../components/CitationModal';
+import { getAllSDGs, getSDGFullText, sdgMatches, normalizeSDG } from '../utils/sdgUtils';
 import { 
   FiBarChart2, 
   FiUsers, 
@@ -116,28 +117,8 @@ const Homepage = () => {
     });
   };
   const getAvailableSDGs = () => {
-    // Only use the standard 17 SDGs
-    const standardSDGs = [
-      'SDG 1: No Poverty',
-      'SDG 2: Zero Hunger',
-      'SDG 3: Good Health and Well-being',
-      'SDG 4: Quality Education',
-      'SDG 5: Gender Equality',
-      'SDG 6: Clean Water and Sanitation',
-      'SDG 7: Affordable and Clean Energy',
-      'SDG 8: Decent Work and Economic Growth',
-      'SDG 9: Industry, Innovation and Infrastructure',
-      'SDG 10: Reduced Inequality',
-      'SDG 11: Sustainable Cities and Communities',
-      'SDG 12: Responsible Consumption and Production',
-      'SDG 13: Climate Action',
-      'SDG 14: Life Below Water',
-      'SDG 15: Life on Land',
-      'SDG 16: Peace and Justice Strong Institutions',
-      'SDG 17: Partnerships to achieve the Goal'
-    ];
-    
-    return standardSDGs;
+    // Use the utility function to get standardized SDG list
+    return getAllSDGs();
   };
 
   const clearSDGFilters = () => {
@@ -230,10 +211,9 @@ const Homepage = () => {
     // SDG filter
     if (filters.sdgs.length > 0) {
       const paperSDGs = paper.sdgs || [];
-      const normalizedPaperSDGs = paperSDGs.map(sdg => 
-        typeof sdg === 'object' ? (sdg.name || sdg.id || 'Unknown SDG') : sdg
-      );
-      const hasMatchingSDG = filters.sdgs.some(sdg => normalizedPaperSDGs.includes(sdg));
+      const hasMatchingSDG = filters.sdgs.some(filterSDG => {
+        return paperSDGs.some(paperSDG => sdgMatches(filterSDG, paperSDG));
+      });
       if (!hasMatchingSDG) return false;
     }
 
@@ -634,9 +614,7 @@ const Homepage = () => {
                       <span className="sdgs-label">SDGs:</span>
                       {paper.sdgs.map((sdg, index) => (
                         <span key={index} className="sdg-tag">
-                          {typeof sdg === 'object' ? 
-                            (sdg.name || sdg.id || 'Unknown SDG') : 
-                            (sdg || 'Unknown SDG')}
+                          {getSDGFullText(sdg)}
                         </span>
                       ))}
                     </div>

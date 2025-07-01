@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
+import { getSDGFullText } from '../utils/sdgUtils';
 import './PaperDetailModal.css';
 import PaperRequestModal from './PaperRequestModal';
 import { 
@@ -274,6 +275,19 @@ const PaperDetailModal = ({ paperId, isOpen, onClose, user }) => {
                   ))}
                 </div>
               </div>
+
+              {paper.sdgs && paper.sdgs.length > 0 && (
+                <div className="paper-sdgs">
+                  <h3>Sustainable Development Goals (SDGs)</h3>
+                  <div className="sdgs-list">
+                    {paper.sdgs.map((sdg, index) => (
+                      <span key={index} className="sdg-tag">
+                        {getSDGFullText(sdg)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="paper-interactions">
                 <div className="interaction-buttons">

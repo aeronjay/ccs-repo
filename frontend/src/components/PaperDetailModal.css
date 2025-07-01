@@ -167,6 +167,34 @@
   font-weight: 500;
 }
 
+/* Paper SDGs */
+.paper-sdgs {
+  margin-bottom: 24px;
+}
+
+.paper-sdgs h3 {
+  font-size: 16px;
+  font-weight: 600;
+  color: #333;
+  margin: 0 0 12px 0;
+}
+
+.sdgs-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.sdgs-list .sdg-tag {
+  background-color: #e8f5e8;
+  color: #2e7d2e;
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #c8e6c8;
+}
+
 /* Paper Interactions */
 .paper-interactions {
   margin-bottom: 32px;
