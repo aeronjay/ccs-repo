@@ -433,7 +433,7 @@ const ManagePapers = () => {
         authors: authorsList,
         tags: keywordsList,
         sdgs: selectedSDGs.map(sdg => typeof sdg === 'object' ? sdg : { id: sdg }), // Ensure consistent format
-        doi: isPublished && hasDoi ? doi : (isPublished && hasDoi ? `DOI-${Date.now()}` : ''), // Generate a simple DOI if not provided but only when published
+        doi: isPublished && hasDoi ? doi : '', // Only include DOI when published and checked
         references,
         conferenceProceeding: isPublished && hasConference
       };

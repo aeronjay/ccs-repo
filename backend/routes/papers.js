@@ -68,7 +68,7 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
         authors: parsedAuthors,
         tags: parsedTags,
         sdgs: parsedSDGs,
-        doi: doi || `DOI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        doi: doi === '' ? '' : (doi || `DOI-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`),
         uploadDate: new Date(),
         contentType: req.file.mimetype,
         size: req.file.size,
@@ -303,7 +303,7 @@ router.put('/:fileId', async (req, res) => {
           'metadata.authors': authors || file.metadata.authors,
           'metadata.tags': updatedTags,
           'metadata.sdgs': sdgs || file.metadata.sdgs,
-          'metadata.doi': doi || file.metadata.doi,
+          'metadata.doi': doi === '' ? '' : (doi || file.metadata.doi),
           'metadata.isPublished': isPublished !== undefined ? isPublished : file.metadata.isPublished,
           'metadata.references': references || file.metadata.references,
           'metadata.conferenceProceeding': conferenceProceeding !== undefined ? conferenceProceeding : file.metadata.conferenceProceeding
