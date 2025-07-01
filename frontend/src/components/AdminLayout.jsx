@@ -5,8 +5,6 @@ import {
   FiUsers, 
   FiClock, 
   FiFileText, 
-  FiMessageSquare, 
-  FiSettings,
   FiMenu,
   FiX,
   FiLogOut,
@@ -69,16 +67,6 @@ import './AdminLayout.css';  const AdminLayout = ({ children }) => {
       path: '/admin/manage-papers',
       name: 'Manage Papers',
       icon: FiFileText
-    },
-    {
-      path: '/admin/messages',
-      name: 'Messages',
-      icon: FiMessageSquare
-    },
-    {
-      path: '/admin/settings',
-      name: 'Settings',
-      icon: FiSettings
     }
   ];
 

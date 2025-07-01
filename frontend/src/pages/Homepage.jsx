@@ -9,7 +9,6 @@ import {
   FiUsers, 
   FiClock, 
   FiFileText, 
-  FiMessageSquare, 
   FiSettings,
   FiLogOut,
   FiUser,
@@ -302,12 +301,6 @@ const Homepage = () => {
                     >
                       <FiFileText size={16} /> My Submissions
                     </button>
-                    <button 
-                      className="nav-link" 
-                      onClick={() => navigate('/settings')}
-                    >
-                      <FiSettings size={16} /> Settings
-                    </button>
                   </>
                 ) : user.role === 'moderator' ? (
                   <>
@@ -322,12 +315,6 @@ const Homepage = () => {
                       onClick={() => navigate('/admin/dashboard')}
                     >
                       <FiBarChart2 size={16} /> Manage System
-                    </button>
-                    <button 
-                      className="nav-link" 
-                      onClick={() => navigate('/settings')}
-                    >
-                      <FiSettings size={16} /> Settings
                     </button>
                   </>
                 ) : (
@@ -355,18 +342,6 @@ const Homepage = () => {
                       onClick={() => navigate('/admin/manage-users')}
                     >
                       <FiUsers size={16} /> Users
-                    </button>
-                    <button 
-                      className="nav-link" 
-                      onClick={() => navigate('/admin/messages')}
-                    >
-                      <FiMessageSquare size={16} /> Messages
-                    </button>
-                    <button 
-                      className="nav-link" 
-                      onClick={() => navigate('/admin/settings')}
-                    >
-                      <FiSettings size={16} /> Settings
                     </button>
                   </>
                 )}
