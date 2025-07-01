@@ -24,6 +24,8 @@
   --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   --royal-velvet: #6a3093;  /* Same as primary-color for consistency */
   --royal-velvet-light: #9370DB;  /* Same as primary-light */
+  --royal-velvet-bg: rgba(102, 51, 153, 0.08);  /* Light purple background */
+  --royal-velvet-dark: #4A1D6E;  /* Same as primary-dark */
   --royal-accent: #a044ff;  /* Same as accent-color */
 }
 
@@ -818,6 +820,28 @@
 
 .user-dropdown .logout-btn:hover {
   background-color: rgba(220, 53, 69, 0.1);
+}
+
+/* Cite Button Styles */
+.cite-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: var(--royal-velvet-bg);
+  color: var(--royal-velvet);
+  border: 1px solid rgba(102, 51, 153, 0.2);
+  padding: 6px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: var(--transition);
+}
+
+.cite-btn:hover {
+  background-color: rgba(102, 51, 153, 0.15);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 5px rgba(106, 48, 147, 0.1);
 }
 
 /* Responsive Design */

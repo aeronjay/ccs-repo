@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { paperService } from '../services/service';
 import PaperDetailModal from '../components/PaperDetailModal';
 import AuthorDetailModal from '../components/AuthorDetailModal';
+import CitationModal from '../components/CitationModal';
 import { 
   FiBarChart2, 
   FiUsers, 
@@ -15,7 +16,8 @@ import {
   FiThumbsUp,
   FiMessageCircle,
   FiActivity,
-  FiX
+  FiX,
+  FiBookmark
 } from 'react-icons/fi';
 import '../../styles/Homepage.css';
 
@@ -32,6 +34,8 @@ const Homepage = () => {
   const [selectedAuthor, setSelectedAuthor] = useState(null);
   const [isAuthorModalOpen, setIsAuthorModalOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedPaperForCitation, setSelectedPaperForCitation] = useState(null);
+  const [isCitationModalOpen, setIsCitationModalOpen] = useState(false);
   const [filters, setFilters] = useState({
     sdgs: [],
     yearRange: { min: '', max: '' },
@@ -189,6 +193,16 @@ const Homepage = () => {
   const handleCloseAuthorModal = () => {
     setIsAuthorModalOpen(false);
     setSelectedAuthor(null);
+  };
+
+  const handleCiteClick = (paper) => {
+    setSelectedPaperForCitation(paper);
+    setIsCitationModalOpen(true);
+  };
+
+  const handleCloseCitationModal = () => {
+    setIsCitationModalOpen(false);
+    setSelectedPaperForCitation(null);
   };
 
   const filteredPapers = papers.filter(paper => {
@@ -606,6 +620,17 @@ const Homepage = () => {
                           (paper.comments.id ? String(paper.comments.id) : '0') : 
                           (paper.comments || '0'))}</span>
                     </div>
+                    <div className="stats-right">
+                      <button 
+                        className="cite-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCiteClick(paper);
+                        }}
+                      >
+                        <FiBookmark size={16} /> Cite
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -627,6 +652,13 @@ const Homepage = () => {
         authorName={selectedAuthor}
         isOpen={isAuthorModalOpen}
         onClose={handleCloseAuthorModal}
+      />
+
+      {/* Citation Modal */}
+      <CitationModal
+        paper={selectedPaperForCitation}
+        isOpen={isCitationModalOpen}
+        onClose={handleCloseCitationModal}
       />
     </div>
   );
