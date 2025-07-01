@@ -236,8 +236,8 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: 'Invalid credentials' });
     }
 
-    // Check if user account is approved (unless admin)
-    if (user.role !== 'admin' && user.status !== 'approved') {
+    // Check if user account is approved (unless admin or moderator)
+    if (!['admin', 'moderator'].includes(user.role) && user.status !== 'approved') {
       return res.status(403).json({ 
         message: 'Your account is pending approval. Please wait for an administrator to approve your account.',
         status: user.status
@@ -254,8 +254,28 @@ router.post('/login', async (req, res) => {
 });
 
 // Admin routes for user management
-// Get all users (admin only)
-router.get('/admin/users', async (req, res) => {
+// Middleware to check if user is admin or moderator (admin/moderator access)
+const requireAdminOrModerator = async (req, res, next) => {
+  // In a real app, you'd get this from JWT token or session
+  // For now, we'll assume frontend sends user role in headers
+  const userRole = req.headers['user-role'];
+  if (!userRole || !['admin', 'moderator'].includes(userRole)) {
+    return res.status(403).json({ message: 'Access denied. Admin or moderator privileges required.' });
+  }
+  next();
+};
+
+// Middleware to check if user is admin only (admin-only access)
+const requireAdminOnly = async (req, res, next) => {
+  const userRole = req.headers['user-role'];
+  if (!userRole || userRole !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  }
+  next();
+};
+
+// Get all users (admin/moderator access)
+router.get('/admin/users', requireAdminOrModerator, async (req, res) => {
   try {
     const users = await User.find({}, { password: 0 }).sort({ createdAt: -1 });
     res.json(users);
@@ -264,14 +284,23 @@ router.get('/admin/users', async (req, res) => {
   }
 });
 
-// Update user role (admin only)
-router.put('/admin/users/:userId/role', async (req, res) => {
+// Update user role (admin only - can only promote users to moderator, not admin)
+router.put('/admin/users/:userId/role', requireAdminOnly, async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
 
-    if (!['user', 'admin'].includes(role)) {
-      return res.status(400).json({ message: 'Invalid role' });
+    // Only allow admin to promote users to moderator, not to admin
+    if (!['user', 'moderator'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role. Only user and moderator roles are allowed.' });
+    }
+
+    // Find the admin user (first admin created)
+    const firstAdmin = await User.findOne({ role: 'admin' }).sort({ createdAt: 1 });
+    
+    // Prevent changing the first admin's role
+    if (userId === firstAdmin._id.toString()) {
+      return res.status(400).json({ message: 'Cannot change the primary admin\'s role.' });
     }
 
     const user = await User.findByIdAndUpdate(
@@ -291,7 +320,7 @@ router.put('/admin/users/:userId/role', async (req, res) => {
 });
 
 // Delete user (admin only)
-router.delete('/admin/users/:userId', async (req, res) => {
+router.delete('/admin/users/:userId', requireAdminOnly, async (req, res) => {
   try {
     const { userId } = req.params;
 
@@ -307,11 +336,12 @@ router.delete('/admin/users/:userId', async (req, res) => {
   }
 });
 
-// Get user statistics (admin only)
-router.get('/admin/stats', async (req, res) => {
+// Get user statistics (admin/moderator access)
+router.get('/admin/stats', requireAdminOrModerator, async (req, res) => {
   try {
     const totalUsers = await User.countDocuments();
     const adminUsers = await User.countDocuments({ role: 'admin' });
+    const moderatorUsers = await User.countDocuments({ role: 'moderator' });
     const regularUsers = await User.countDocuments({ role: 'user' });
     const pendingUsers = await User.countDocuments({ status: 'pending' });
     const approvedUsers = await User.countDocuments({ status: 'approved' });
@@ -324,6 +354,7 @@ router.get('/admin/stats', async (req, res) => {
     res.json({
       totalUsers,
       adminUsers,
+      moderatorUsers,
       regularUsers,
       pendingUsers,
       approvedUsers,
@@ -335,8 +366,8 @@ router.get('/admin/stats', async (req, res) => {
   }
 });
 
-// Get pending users (admin only)
-router.get('/admin/users/pending', async (req, res) => {
+// Get pending users (admin/moderator access)
+router.get('/admin/users/pending', requireAdminOrModerator, async (req, res) => {
   try {
     const pendingUsers = await User.find({ status: 'pending' }, { password: 0 })
       .sort({ createdAt: -1 });
@@ -346,8 +377,8 @@ router.get('/admin/users/pending', async (req, res) => {
   }
 });
 
-// Approve/reject user (admin only)
-router.put('/admin/users/:userId/status', async (req, res) => {
+// Approve/reject user (admin/moderator access)
+router.put('/admin/users/:userId/status', requireAdminOrModerator, async (req, res) => {
   try {
     const { userId } = req.params;
     const { status } = req.body;

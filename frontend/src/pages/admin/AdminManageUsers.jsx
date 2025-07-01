@@ -21,6 +21,27 @@ const AdminManageUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [message, setMessage] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
+  const [currentUser, setCurrentUser] = useState(null);
+
+  // Check if current user is admin (only admins can access this page)
+  useEffect(() => {
+    const userData = localStorage.getItem('user');
+    if (!userData) {
+      navigate('/signin');
+      return;
+    }
+    
+    try {
+      const parsedUser = JSON.parse(userData);
+      if (parsedUser.role !== 'admin') {
+        navigate('/admin/dashboard'); // Redirect moderators to dashboard
+        return;
+      }
+      setCurrentUser(parsedUser);
+    } catch (error) {
+      navigate('/signin');
+    }
+  }, [navigate]);
 
   // Load all users and statistics
   const loadData = async () => {
@@ -53,7 +74,8 @@ const AdminManageUsers = () => {
                          (filterStatus === 'pending' && user.status === 'pending') ||
                          (filterStatus === 'approved' && user.status === 'approved') ||
                          (filterStatus === 'rejected' && user.status === 'rejected') ||
-                         (filterStatus === 'admin' && user.role === 'admin');
+                         (filterStatus === 'admin' && user.role === 'admin') ||
+                         (filterStatus === 'moderator' && user.role === 'moderator');
     
     return matchesSearch && matchesStatus;
   });
@@ -94,8 +116,6 @@ const AdminManageUsers = () => {
 
   // Handle delete user
   const handleDeleteUser = async (userId, userEmail) => {
-    const currentUser = JSON.parse(localStorage.getItem('user'));
-    
     // Prevent admin from deleting themselves
     if (currentUser.id === userId) {
       setMessage('Error: You cannot delete your own account');
@@ -174,6 +194,13 @@ const AdminManageUsers = () => {
             <div className="stat-number">{stats.adminUsers || 0}</div>
             <div className="stat-label">Administrators</div>
           </div>
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiUsers size={28} />
+            </div>
+            <div className="stat-number">{stats.moderatorUsers || 0}</div>
+            <div className="stat-label">Moderators</div>
+          </div>
         </div>
 
         {/* Filters and Search */}
@@ -201,6 +228,7 @@ const AdminManageUsers = () => {
                 <option value="approved">Approved</option>
                 <option value="rejected">Rejected</option>
                 <option value="admin">Administrators</option>
+                <option value="moderator">Moderators</option>
               </select>
             </div>
             <div className="admin-form-group">
@@ -245,6 +273,7 @@ const AdminManageUsers = () => {
                   {filteredUsers.map(user => {
                     const currentUser = JSON.parse(localStorage.getItem('user'));
                     const isCurrentUser = currentUser.id === user._id;
+                    const isFirstAdmin = user.role === 'admin' && user.createdAt === stats.recentUsers?.find(u => u.role === 'admin')?.createdAt;
                     
                     return (
                       <tr key={user._id}>
@@ -264,7 +293,7 @@ const AdminManageUsers = () => {
                             className="status-select"
                             value={user.status || 'pending'}
                             onChange={(e) => handleStatusChange(user._id, e.target.value)}
-                            disabled={isCurrentUser || user.role === 'admin'}
+                            disabled={isCurrentUser || ['admin', 'moderator'].includes(user.role)}
                           >
                             <option value="pending">Pending</option>
                             <option value="approved">Approved</option>
@@ -279,7 +308,9 @@ const AdminManageUsers = () => {
                             disabled={isCurrentUser}
                           >
                             <option value="user">User</option>
-                            <option value="admin">Admin</option>
+                            <option value="moderator">Moderator</option>
+                            {/* Show admin option only if user is already admin (for display purposes) */}
+                            {user.role === 'admin' && <option value="admin">Admin</option>}
                           </select>
                         </td>
                         <td>{formatDate(user.createdAt)}</td>

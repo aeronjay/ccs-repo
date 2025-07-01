@@ -309,6 +309,27 @@ const Homepage = () => {
                       <FiSettings size={16} /> Settings
                     </button>
                   </>
+                ) : user.role === 'moderator' ? (
+                  <>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/manage-papers')}
+                    >
+                      <FiFileText size={16} /> My Submissions
+                    </button>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/admin/dashboard')}
+                    >
+                      <FiBarChart2 size={16} /> Manage System
+                    </button>
+                    <button 
+                      className="nav-link" 
+                      onClick={() => navigate('/settings')}
+                    >
+                      <FiSettings size={16} /> Settings
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button 

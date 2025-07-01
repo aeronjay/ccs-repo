@@ -6,6 +6,15 @@ const User = require('../models/User');
 const emailService = require('../services/emailService');
 const { GridFSBucket } = require('mongodb');
 
+// Middleware to check if user is admin or moderator
+const requireAdminOrModerator = async (req, res, next) => {
+  const userRole = req.headers['user-role'];
+  if (!userRole || !['admin', 'moderator'].includes(userRole)) {
+    return res.status(403).json({ message: 'Access denied. Admin or moderator privileges required.' });
+  }
+  next();
+};
+
 // Initialize GridFS
 let gfs;
 mongoose.connection.once('open', () => {
@@ -56,8 +65,8 @@ router.post('/request', async (req, res) => {
   }
 });
 
-// Get all paper requests (admin only)
-router.get('/admin/requests', async (req, res) => {
+// Get all paper requests (admin/moderator access)
+router.get('/admin/requests', requireAdminOrModerator, async (req, res) => {
   try {
     const requests = await PaperRequest.find()
       .sort({ createdAt: -1 })
@@ -69,8 +78,8 @@ router.get('/admin/requests', async (req, res) => {
   }
 });
 
-// Get pending paper requests (admin only)
-router.get('/admin/requests/pending', async (req, res) => {
+// Get pending paper requests (admin/moderator access)
+router.get('/admin/requests/pending', requireAdminOrModerator, async (req, res) => {
   try {
     const pendingRequests = await PaperRequest.find({ status: 'pending' })
       .sort({ createdAt: -1 })
@@ -82,8 +91,8 @@ router.get('/admin/requests/pending', async (req, res) => {
   }
 });
 
-// Process a paper request (admin only)
-router.put('/admin/requests/:requestId', async (req, res) => {
+// Process a paper request (admin/moderator access)
+router.put('/admin/requests/:requestId', requireAdminOrModerator, async (req, res) => {
   try {
     const { requestId } = req.params;
     const { status, adminId, adminMessage } = req.body;

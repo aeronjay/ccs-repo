@@ -4,6 +4,24 @@ const { GridFSBucket } = require('mongodb');
 const mongoose = require('mongoose');
 const router = express.Router();
 
+// Middleware to check if user is admin or moderator
+const requireAdminOrModerator = async (req, res, next) => {
+  const userRole = req.headers['user-role'];
+  if (!userRole || !['admin', 'moderator'].includes(userRole)) {
+    return res.status(403).json({ message: 'Access denied. Admin or moderator privileges required.' });
+  }
+  next();
+};
+
+// Middleware to check if user is admin only
+const requireAdminOnly = async (req, res, next) => {
+  const userRole = req.headers['user-role'];
+  if (!userRole || userRole !== 'admin') {
+    return res.status(403).json({ message: 'Access denied. Admin privileges required.' });
+  }
+  next();
+};
+
 // Configure multer for memory storage
 const upload = multer({ 
   storage: multer.memoryStorage(),
@@ -351,8 +369,8 @@ router.get('/public', async (req, res) => {
   }
 });
 
-// Get all papers (for admin)
-router.get('/admin/all', async (req, res) => {
+// Get all papers (for admin/moderator)
+router.get('/admin/all', requireAdminOrModerator, async (req, res) => {
   try {
     const files = await gfs.find({}).toArray();      const papers = files.map(file => ({
       id: file._id,
@@ -601,9 +619,9 @@ router.get('/:paperId/download-permission', async (req, res) => {
       
       if (!user) {
         reason = 'User not found';
-      } else if (user.role === 'admin') {
+      } else if (['admin', 'moderator'].includes(user.role)) {
         canDownload = true;
-        reason = 'Admin access';
+        reason = user.role === 'admin' ? 'Admin access' : 'Moderator access';
       } else if (file.metadata.userId === userId) {
         canDownload = true;
         reason = 'Paper owner access';
@@ -625,7 +643,7 @@ router.get('/:paperId/download-permission', async (req, res) => {
 // Admin paper management routes
 
 // Delete paper (admin only)
-router.delete('/admin/papers/:paperId', async (req, res) => {
+router.delete('/admin/papers/:paperId', requireAdminOnly, async (req, res) => {
   try {
     const { paperId } = req.params;
 
@@ -645,8 +663,8 @@ router.delete('/admin/papers/:paperId', async (req, res) => {
   }
 });
 
-// Update paper status/metadata (admin only)
-router.put('/admin/papers/:paperId', async (req, res) => {
+// Update paper status/metadata (admin/moderator access)
+router.put('/admin/papers/:paperId', requireAdminOrModerator, async (req, res) => {
   try {
     const { paperId } = req.params;
     const { title, description, journal, year, publisher, authors, tags, sdgs, doi } = req.body;
@@ -687,8 +705,8 @@ router.put('/admin/papers/:paperId', async (req, res) => {
   }
 });
 
-// Get paper statistics (admin only)
-router.get('/admin/stats', async (req, res) => {
+// Get paper statistics (admin/moderator access)
+router.get('/admin/stats', requireAdminOrModerator, async (req, res) => {
   try {
     const totalPapers = await gfs.find({}).toArray();
     const totalCount = totalPapers.length;

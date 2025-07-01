@@ -23,7 +23,7 @@ const AdminManagePapers = () => {
   });
   const [message, setMessage] = useState('');
 
-  // Check if user is admin
+  // Check if user is admin or moderator
   const checkAdminAccess = () => {
     const user = localStorage.getItem('user');
     if (!user) {
@@ -33,7 +33,7 @@ const AdminManagePapers = () => {
     
     try {
       const userData = JSON.parse(user);
-      if (userData.role !== 'admin') {
+      if (!['admin', 'moderator'].includes(userData.role)) {
         navigate('/');
         return false;
       }

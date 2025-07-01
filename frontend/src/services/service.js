@@ -9,6 +9,16 @@ const api = axios.create({
   },
 });
 
+// Add interceptor to include user role in headers
+api.interceptors.request.use((config) => {
+  const user = localStorage.getItem('user');
+  if (user) {
+    const parsedUser = JSON.parse(user);
+    config.headers['user-role'] = parsedUser.role;
+  }
+  return config;
+});
+
 // Authentication services
 export const authService = {
   // Send OTP for email verification

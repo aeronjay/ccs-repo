@@ -19,7 +19,7 @@ import './AdminLayout.css';  const AdminLayout = ({ children }) => {
   // Removed sidebar toggle state - sidebar will always be open
 
   useEffect(() => {
-    // Check if user is admin
+    // Check if user is admin or moderator
     const userData = localStorage.getItem('user');
     if (!userData) {
       navigate('/signin');
@@ -28,7 +28,7 @@ import './AdminLayout.css';  const AdminLayout = ({ children }) => {
     
     try {
       const parsedUser = JSON.parse(userData);
-      if (parsedUser.role !== 'admin') {
+      if (!['admin', 'moderator'].includes(parsedUser.role)) {
         navigate('/');
         return;
       }
@@ -49,11 +49,12 @@ import './AdminLayout.css';  const AdminLayout = ({ children }) => {
       name: 'Dashboard',
       icon: FiHome
     },
-    {
+    // Only show Manage Users for admin role
+    ...(user?.role === 'admin' ? [{
       path: '/admin/manage-users',
       name: 'Manage Users',
       icon: FiUsers
-    },
+    }] : []),
     {
       path: '/admin/pending-approvals',
       name: 'Pending Approvals',
@@ -96,7 +97,7 @@ import './AdminLayout.css';  const AdminLayout = ({ children }) => {
       <div className="admin-sidebar open">
         <div className="admin-sidebar-header">
           <div className="admin-logo">
-            <h2>CCS Admin</h2>
+            <h2>{user?.role === 'admin' ? 'CCS Admin' : 'CCS Moderator'}</h2>
           </div>
           {/* Toggle button removed */}
         </div>
@@ -126,7 +127,7 @@ import './AdminLayout.css';  const AdminLayout = ({ children }) => {
             </div>
             <div className="user-details">
               <p className="user-email">{user.email}</p>
-              <p className="user-role">Administrator</p>
+              <p className="user-role">{user.role === 'admin' ? 'Administrator' : 'Moderator'}</p>
             </div>
           </div>
           <button className="logout-btn" onClick={handleLogout} title="Logout">
