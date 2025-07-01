@@ -96,6 +96,8 @@ router.post('/upload', upload.single('paper'), async (req, res) => {
         likes: 0,
         dislikes: 0,
         comments: 0,
+        citationCount: 0,
+        downloadCount: 0,
         userLikes: [],
         userDislikes: [],
         paperComments: []
@@ -385,6 +387,8 @@ router.get('/public', async (req, res) => {
       likes: file.metadata.likes || 0,
       dislikes: file.metadata.dislikes || 0,
       comments: (file.metadata.paperComments || []).length,
+      citationCount: file.metadata.citationCount || 0,
+      downloadCount: file.metadata.downloadCount || 0,
       uploadDate: file.metadata.uploadDate,
       filename: file.filename,
       size: file.metadata.size,
@@ -753,41 +757,69 @@ router.put('/admin/papers/:paperId', requireAdminOrModerator, async (req, res) =
   }
 });
 
-// Get paper statistics (admin/moderator access)
+// Track paper citation (increment citation count)
+router.post('/track-citation/:paperId', async (req, res) => {
+  try {
+    const { paperId } = req.params;
+    
+    if (!mongoose.Types.ObjectId.isValid(paperId)) {
+      return res.status(400).json({ message: 'Invalid paper ID' });
+    }
+
+    // Update citation count in papers.files collection
+    const result = await mongoose.connection.db.collection('papers.files').updateOne(
+      { _id: new mongoose.Types.ObjectId(paperId) },
+      { $inc: { 'metadata.citationCount': 1 } }
+    );
+
+    if (result.matchedCount === 0) {
+      return res.status(404).json({ message: 'Paper not found' });
+    }
+
+    res.json({ message: 'Citation tracked successfully' });
+  } catch (error) {
+    console.error('Error tracking citation:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
+// Get paper statistics for admin dashboard
 router.get('/admin/stats', requireAdminOrModerator, async (req, res) => {
   try {
-    const totalPapers = await gfs.find({}).toArray();
-    const totalCount = totalPapers.length;
+    // Get all papers
+    const papers = await mongoose.connection.db.collection('papers.files').find({}).toArray();
     
-    // Calculate total file size
-    const totalSize = totalPapers.reduce((sum, file) => sum + (file.metadata.size || 0), 0);
-    
-    // Get recent uploads
-    const recentPapers = totalPapers
-      .sort((a, b) => new Date(b.metadata.uploadDate) - new Date(a.metadata.uploadDate))
-      .slice(0, 5)
-      .map(file => ({
-        id: file._id,
-        title: file.metadata.title,
-        uploadDate: file.metadata.uploadDate,
-        userId: file.metadata.userId,
-        size: file.metadata.size
-      }));
+    let csCount = 0;
+    let itCount = 0;
+    let totalCitations = 0;
+    let totalDownloads = 0;
 
-    // Count by year
-    const papersByYear = {};
-    totalPapers.forEach(file => {
-      const year = file.metadata.year || 'Unknown';
-      papersByYear[year] = (papersByYear[year] || 0) + 1;
-    });
+    for (const paper of papers) {
+      // Get paper owner to determine department
+      if (paper.metadata.userId) {
+        const owner = await User.findById(paper.metadata.userId);
+        if (owner) {
+          if (owner.department === 'Computer Science') {
+            csCount++;
+          } else if (owner.department === 'Information Technology') {
+            itCount++;
+          }
+        }
+      }
+
+      // Sum up citations and downloads
+      totalCitations += paper.metadata.citationCount || 0;
+      totalDownloads += paper.metadata.downloadCount || 0;
+    }
 
     res.json({
-      totalPapers: totalCount,
-      totalSize,
-      recentPapers,
-      papersByYear
+      computerSciencePapers: csCount,
+      informationTechnologyPapers: itCount,
+      totalCitations,
+      totalDownloads
     });
   } catch (error) {
+    console.error('Error getting paper stats:', error);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

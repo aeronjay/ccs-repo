@@ -509,6 +509,16 @@ export const paperService = {
     } catch (error) {
       throw error.response?.data || { message: 'Failed to fetch paper statistics' };
     }
+  },
+
+  // Track paper citation (increment citation count)
+  trackCitation: async (paperId) => {
+    try {
+      const response = await api.post(`/papers/track-citation/${paperId}`);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || { message: 'Failed to track citation' };
+    }
   }
 };
 

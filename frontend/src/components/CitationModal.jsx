@@ -113,10 +113,21 @@ const CitationModal = ({ paper, isOpen, onClose }) => {
     return citation;
   };
 
-  const handleCopyClick = () => {
+  const handleCopyClick = async () => {
     const citation = generateAPACitation();
     navigator.clipboard.writeText(citation);
     setCopied(true);
+    
+    // Track citation count
+    if (paper && paper.id) {
+      try {
+        const { paperService } = await import('../services/service');
+        await paperService.trackCitation(paper.id);
+      } catch (error) {
+        console.error('Failed to track citation:', error);
+        // Don't show error to user as it's a background operation
+      }
+    }
   };
 
   return (

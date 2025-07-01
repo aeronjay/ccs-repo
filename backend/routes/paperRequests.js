@@ -132,6 +132,12 @@ router.put('/admin/requests/:requestId', requireAdminOrModerator, async (req, re
     
     // If approved, send paper via email
     if (status === 'approved') {
+      // Increment download count in papers.files collection
+      await mongoose.connection.db.collection('papers.files').updateOne(
+        { _id: new mongoose.Types.ObjectId(request.paperId) },
+        { $inc: { 'metadata.downloadCount': 1 } }
+      );
+
       // Find the paper in GridFS
       const files = await gfs.find({ 
         _id: new mongoose.Types.ObjectId(request.paperId) 

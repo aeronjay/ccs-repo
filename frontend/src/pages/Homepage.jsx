@@ -17,7 +17,9 @@ import {
   FiMessageCircle,
   FiActivity,
   FiX,
-  FiBookmark
+  FiBookmark,
+  FiBookOpen,
+  FiDownload
 } from 'react-icons/fi';
 import '../../styles/Homepage.css';
 
@@ -679,6 +681,8 @@ const Homepage = () => {
                         (typeof paper.comments === 'object' ? 
                           (paper.comments.id ? String(paper.comments.id) : '0') : 
                           (paper.comments || '0'))}</span>
+                      <span className="citations"><FiBookOpen size={16} /> {paper.citationCount || 0}</span>
+                      <span className="downloads"><FiDownload size={16} /> {paper.downloadCount || 0}</span>
                     </div>
                     <div className="stats-right">
                       <button 

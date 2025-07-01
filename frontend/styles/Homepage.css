@@ -734,6 +734,7 @@
 .stats-left {
   display: flex;
   gap: 16px;
+  flex-wrap: wrap;
 }
 
 .stats-right {
@@ -741,7 +742,7 @@
   gap: 16px;
 }
 
-.likes, .comments {
+.likes, .comments, .citations, .downloads {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -996,5 +997,23 @@
     margin-top: 8px;
     width: 100%;
     justify-content: space-between;
+  }
+}
+
+@media (max-width: 576px) {
+  .stats-left {
+    gap: 12px;
+  }
+  
+  .likes, .comments, .citations, .downloads {
+    font-size: 13px;
+  }
+  
+  .paper-stats {
+    align-items: stretch;
+  }
+  
+  .stats-right {
+    margin-top: 8px;
   }
 }

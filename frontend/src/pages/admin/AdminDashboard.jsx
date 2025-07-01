@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/AdminLayout';
-import { userService } from '../../services/service';
+import { userService, paperService } from '../../services/service';
 import { 
   FiBarChart2, 
   FiUsers, 
@@ -13,7 +13,10 @@ import {
   FiActivity,
   FiServer,
   FiMail,
-  FiDatabase
+  FiDatabase,
+  FiBook,
+  FiDownload,
+  FiBookOpen
 } from 'react-icons/fi';
 
 const AdminDashboard = () => {
@@ -27,8 +30,11 @@ const AdminDashboard = () => {
 
   const loadDashboardData = async () => {
     try {
-      const statsData = await userService.getUserStats();
-      setStats(statsData);
+      const [statsData, paperStats] = await Promise.all([
+        userService.getUserStats(),
+        paperService.adminGetPaperStats()
+      ]);
+      setStats({ ...statsData, ...paperStats });
       setRecentUsers(statsData.recentUsers || []);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -100,6 +106,38 @@ const AdminDashboard = () => {
             </div>
             <div className="stat-number">{stats.adminUsers || 0}</div>
             <div className="stat-label">Administrators</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiFileText size={28} />
+            </div>
+            <div className="stat-number">{stats.computerSciencePapers || 0}</div>
+            <div className="stat-label">Computer Science Papers</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiBook size={28} />
+            </div>
+            <div className="stat-number">{stats.informationTechnologyPapers || 0}</div>
+            <div className="stat-label">Information Technology Papers</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiBookOpen size={28} />
+            </div>
+            <div className="stat-number">{stats.totalCitations || 0}</div>
+            <div className="stat-label">Total Citations</div>
+          </div>
+
+          <div className="stat-card">
+            <div className="stat-icon">
+              <FiDownload size={28} />
+            </div>
+            <div className="stat-number">{stats.totalDownloads || 0}</div>
+            <div className="stat-label">Total Downloads</div>
           </div>
         </div>
 
