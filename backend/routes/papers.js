@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const { GridFSBucket } = require('mongodb');
 const mongoose = require('mongoose');
+const User = require('../models/User');
 const router = express.Router();
 
 // Middleware to check if user is admin or moderator
@@ -199,17 +200,33 @@ router.get('/download/:fileId', async (req, res) => {
 
     const file = files[0];
 
-    // Check if user owns the file or is a co-author
-    if (userId && file.metadata.userId !== userId) {
-      // Check if user is a co-author
-      const isCoAuthor = file.metadata.authors && 
-                        file.metadata.authors.some(author => 
-                          author.userId === userId
-                        );
+    // Check if user has permission to download
+    let hasPermission = false;
+    
+    if (userId) {
+      // Get user role to check if admin or moderator
+      const user = await User.findById(userId);
       
-      if (!isCoAuthor) {
-        return res.status(403).json({ message: 'Access denied' });
+      if (user && ['admin', 'moderator'].includes(user.role)) {
+        // Admin and moderators can download any paper
+        hasPermission = true;
+      } else if (file.metadata.userId === userId) {
+        // Owner can download their own paper
+        hasPermission = true;
+      } else {
+        // Check if user is a co-author
+        const isCoAuthor = file.metadata.authors && 
+                          file.metadata.authors.some(author => 
+                            author.userId === userId
+                          );
+        if (isCoAuthor) {
+          hasPermission = true;
+        }
       }
+    }
+
+    if (!hasPermission) {
+      return res.status(403).json({ message: 'Access denied. You need permission to download this paper.' });
     }
 
     // Set response headers
@@ -614,7 +631,6 @@ router.get('/:paperId/download-permission', async (req, res) => {
       reason = 'Please sign in to download papers';
     } else {
       // Get user details to check role
-      const User = require('../models/User');
       const user = await User.findById(userId);
       
       if (!user) {

@@ -45,7 +45,10 @@ const AdminManagePapers = () => {
     authors: [],
     tags: [],
     sdgs: [],
-    doi: ''
+    doi: '',
+    isPublished: false,
+    references: '',
+    conferenceProceeding: false
   });
   const [editLoading, setEditLoading] = useState(false);
   const [message, setMessage] = useState('');
@@ -208,7 +211,10 @@ const AdminManagePapers = () => {
       authors: paper.authors || [],
       tags: paper.tags || [],
       sdgs: paper.sdgs || [],
-      doi: paper.doi || ''
+      doi: paper.doi || '',
+      isPublished: paper.isPublished || false,
+      references: paper.references || '',
+      conferenceProceeding: paper.conferenceProceeding || false
     });
     setShowEditModal(true);
   };
@@ -236,25 +242,77 @@ const AdminManagePapers = () => {
   const handleDownload = async (paper) => {
     try {
       const user = JSON.parse(localStorage.getItem('user'));
+      if (!user || !user.id) {
+        showMessage('Please sign in to download papers', 'error');
+        return;
+      }
+
+      // Check if user is admin or moderator
+      if (!['admin', 'moderator'].includes(user.role)) {
+        showMessage('Admin or moderator role required to download papers', 'error');
+        return;
+      }
+
+      showMessage('Starting download...', 'info');
+      
+      // Call the download service
       const response = await paperService.downloadPaper(paper.id, user.id);
       
+      // Check if response is valid
+      if (!response || !response.data) {
+        throw new Error('Invalid response from server');
+      }
+
+      // Get content type from headers
+      const contentType = response.headers['content-type'] || 
+                         response.headers['Content-Type'] || 
+                         'application/pdf';
+      
       // Create blob and download
-      const blob = new Blob([response.data], { 
-        type: response.headers['content-type'] || 'application/pdf'
-      });
+      const blob = new Blob([response.data], { type: contentType });
+      
+      // Check if blob is valid
+      if (blob.size === 0) {
+        throw new Error('Downloaded file is empty');
+      }
+
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = paper.filename || `${paper.title}.pdf`;
+      
+      // Generate filename - prefer paper filename, fallback to title
+      let filename = paper.filename;
+      if (!filename) {
+        const cleanTitle = paper.title ? paper.title.replace(/[^a-z0-9]/gi, '_').toLowerCase() : 'paper';
+        const extension = contentType.includes('pdf') ? 'pdf' : 'docx';
+        filename = `${cleanTitle}.${extension}`;
+      }
+      
+      link.download = filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(url);
       
-      showMessage('Download started', 'success');
+      showMessage('Download completed successfully', 'success');
     } catch (error) {
       console.error('Error downloading paper:', error);
-      showMessage('Error downloading paper: ' + (error.message || 'Unknown error'), 'error');
+      let errorMessage = 'Download failed';
+      
+      if (error.response) {
+        // Server responded with error status
+        if (error.response.status === 403) {
+          errorMessage = 'Access denied. Admin privileges are required to download papers.';
+        } else if (error.response.status === 404) {
+          errorMessage = 'Paper file not found on server.';
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      showMessage(errorMessage, 'error');
     }
   };
 
@@ -625,6 +683,108 @@ const AdminManagePapers = () => {
                   style={styles.formInput}
                   placeholder="Digital Object Identifier"
                 />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>Authors</label>
+                <textarea
+                  value={Array.isArray(editForm.authors) 
+                    ? editForm.authors.map(author => 
+                        typeof author === 'object' 
+                          ? (author.name || `${author.firstName || ''} ${author.lastName || ''}`.trim() || 'Unknown Author')
+                          : String(author)
+                      ).join(', ')
+                    : String(editForm.authors || '')
+                  }
+                  onChange={(e) => {
+                    const authorsText = e.target.value;
+                    const authorsArray = authorsText.split(',').map(author => author.trim()).filter(author => author);
+                    setEditForm({...editForm, authors: authorsArray});
+                  }}
+                  rows="2"
+                  style={styles.formTextarea}
+                  placeholder="Enter authors separated by commas"
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>Tags/Keywords</label>
+                <textarea
+                  value={Array.isArray(editForm.tags) 
+                    ? editForm.tags.map(tag => 
+                        typeof tag === 'object' 
+                          ? (tag.name || tag.id || String(tag))
+                          : String(tag)
+                      ).join(', ')
+                    : String(editForm.tags || '')
+                  }
+                  onChange={(e) => {
+                    const tagsText = e.target.value;
+                    const tagsArray = tagsText.split(',').map(tag => tag.trim()).filter(tag => tag);
+                    setEditForm({...editForm, tags: tagsArray});
+                  }}
+                  rows="2"
+                  style={styles.formTextarea}
+                  placeholder="Enter tags/keywords separated by commas"
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>SDGs (Sustainable Development Goals)</label>
+                <textarea
+                  value={Array.isArray(editForm.sdgs) 
+                    ? editForm.sdgs.map(sdg => 
+                        typeof sdg === 'object' 
+                          ? (sdg.name || sdg.id || String(sdg))
+                          : String(sdg)
+                      ).join(', ')
+                    : String(editForm.sdgs || '')
+                  }
+                  onChange={(e) => {
+                    const sdgsText = e.target.value;
+                    const sdgsArray = sdgsText.split(',').map(sdg => sdg.trim()).filter(sdg => sdg);
+                    setEditForm({...editForm, sdgs: sdgsArray});
+                  }}
+                  rows="2"
+                  style={styles.formTextarea}
+                  placeholder="Enter SDGs separated by commas"
+                />
+              </div>
+
+              <div style={styles.formGroup}>
+                <label style={styles.formLabel}>References</label>
+                <textarea
+                  value={editForm.references}
+                  onChange={(e) => setEditForm({...editForm, references: e.target.value})}
+                  rows="3"
+                  style={styles.formTextarea}
+                  placeholder="Enter references/bibliography"
+                />
+              </div>
+
+              <div style={styles.formRow}>
+                <div style={styles.formGroup}>
+                  <label style={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={editForm.isPublished}
+                      onChange={(e) => setEditForm({...editForm, isPublished: e.target.checked})}
+                      style={styles.checkbox}
+                    />
+                    Published
+                  </label>
+                </div>
+                <div style={styles.formGroup}>
+                  <label style={styles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={editForm.conferenceProceeding}
+                      onChange={(e) => setEditForm({...editForm, conferenceProceeding: e.target.checked})}
+                      style={styles.checkbox}
+                    />
+                    Conference Proceeding
+                  </label>
+                </div>
               </div>
             </div>
           </div>
@@ -1136,6 +1296,21 @@ const AdminManagePapers = () => {
       outline: 'none',
       resize: 'vertical',
       minHeight: '80px'
+    },
+    checkboxLabel: {
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      fontSize: '16px',
+      color: '#333',
+      cursor: 'pointer',
+      userSelect: 'none'
+    },
+    checkbox: {
+      width: '18px',
+      height: '18px',
+      accentColor: '#663399',
+      cursor: 'pointer'
     },
 
     // Button styles
