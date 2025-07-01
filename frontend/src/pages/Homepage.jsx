@@ -40,7 +40,8 @@ const Homepage = () => {
     sdgs: [],
     yearRange: { min: '', max: '' },
     publisher: '',
-    journal: ''
+    journal: '',
+    program: ''
   });
   const filtersRef = useRef(null);
 
@@ -113,7 +114,8 @@ const Homepage = () => {
       sdgs: [],
       yearRange: { min: '', max: '' },
       publisher: '',
-      journal: ''
+      journal: '',
+      program: ''
     });
   };
   const getAvailableSDGs = () => {
@@ -152,6 +154,16 @@ const Homepage = () => {
       }
     });
     return Array.from(journals).sort();
+  };
+
+  const getAvailablePrograms = () => {
+    const programs = new Set();
+    papers.forEach(paper => {
+      if (paper.ownerDepartment && paper.ownerDepartment !== 'Unknown') {
+        programs.add(paper.ownerDepartment);
+      }
+    });
+    return Array.from(programs).sort();
   };
 
   const handlePaperTitleClick = (paperId) => {
@@ -255,6 +267,13 @@ const Homepage = () => {
         ? (paper.journal.name || paper.journal.id || 'Unknown Journal')
         : paper.journal;
       if (paperJournal !== filters.journal) {
+        return false;
+      }
+    }
+
+    // Program filter (based on paper owner's department)
+    if (filters.program) {
+      if (paper.ownerDepartment !== filters.program) {
         return false;
       }
     }
@@ -463,6 +482,20 @@ const Homepage = () => {
                         </select>
                       </div>
 
+                      <div className="filter-section">
+                        <h4>Program</h4>
+                        <select
+                          value={filters.program}
+                          onChange={(e) => handleFilterChange('program', e.target.value)}
+                          className="filter-select"
+                        >
+                          <option value="">All Programs</option>
+                          {getAvailablePrograms().map(program => (
+                            <option key={program} value={program}>{program}</option>
+                          ))}
+                        </select>
+                      </div>
+
                       <div className="filter-actions">
                         <button onClick={clearFilters} className="clear-filters-btn">
                           <FiX size={16} /> Clear All Filters
@@ -496,7 +529,7 @@ const Homepage = () => {
           </div>
 
           {/* Active Filters Display */}
-          {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.yearRange.min || filters.yearRange.max) && (
+          {(filters.sdgs.length > 0 || filters.publisher || filters.journal || filters.program || filters.yearRange.min || filters.yearRange.max) && (
             <div className="active-filters">
               <div className="active-filters-header">
                 <span>Active Filters:</span>
@@ -519,6 +552,12 @@ const Homepage = () => {
                   <span className="active-filter">
                     Journal: {filters.journal}
                     <button onClick={() => handleFilterChange('journal', '')} className="remove-filter">×</button>
+                  </span>
+                )}
+                {filters.program && (
+                  <span className="active-filter">
+                    Program: {filters.program}
+                    <button onClick={() => handleFilterChange('program', '')} className="remove-filter">×</button>
                   </span>
                 )}
                 {(filters.yearRange.min || filters.yearRange.max) && (

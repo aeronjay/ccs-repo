@@ -359,7 +359,17 @@ router.put('/:fileId', async (req, res) => {
 // Get all papers for public display (homepage)
 router.get('/public', async (req, res) => {
   try {
-    const files = await gfs.find({}).toArray();      const papers = files.map(file => ({
+    const files = await gfs.find({}).toArray();
+    
+    // Get user IDs to fetch department information
+    const userIds = [...new Set(files.map(file => file.metadata.userId).filter(id => id))];
+    const users = await User.find({ _id: { $in: userIds } }).select('_id department');
+    const userDepartmentMap = {};
+    users.forEach(user => {
+      userDepartmentMap[user._id.toString()] = user.department;
+    });
+
+    const papers = files.map(file => ({
       id: file._id,
       title: file.metadata.title,
       journal: file.metadata.journal || 'Unknown Journal',
@@ -377,7 +387,8 @@ router.get('/public', async (req, res) => {
       comments: (file.metadata.paperComments || []).length,
       uploadDate: file.metadata.uploadDate,
       filename: file.filename,
-      size: file.metadata.size
+      size: file.metadata.size,
+      ownerDepartment: userDepartmentMap[file.metadata.userId] || 'Unknown'
     }));
 
     res.json(papers);
