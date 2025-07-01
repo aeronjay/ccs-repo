@@ -257,7 +257,7 @@ const Homepage = () => {
                       className="nav-link" 
                       onClick={() => navigate('/manage-papers')}
                     >
-                      <FiFileText size={16} /> My Papers
+                      <FiFileText size={16} /> My Submissions
                     </button>
                     <button 
                       className="nav-link" 
