@@ -77,6 +77,9 @@ const ManagePapers = () => {
   const formatUserName = (user) => {
     if (!user) return 'Unknown User';
     
+    // Debug logging
+    console.log('formatUserName called with:', user);
+    
     const firstName = (user.firstName || '').trim();
     const lastName = (user.lastName || '').trim();
     
@@ -116,6 +119,11 @@ const ManagePapers = () => {
       fetchUsers();
     }
   }, [userId]);
+
+  // Check for user data completeness on component mount
+  useEffect(() => {
+    refreshUserDataIfNeeded();
+  }, []);
 
   // Updated fetchUsers function to handle both _id and id fields
   const fetchUsers = async () => {
@@ -399,6 +407,19 @@ const ManagePapers = () => {
     return null;
   };
 
+  // Helper function to refresh user data if firstName/lastName are missing
+  const refreshUserDataIfNeeded = async () => {
+    const currentUser = getUserFromLocalStorage();
+    if (currentUser && (!currentUser.firstName || !currentUser.lastName)) {
+      try {
+        // The user needs to log in again to get updated data
+        setMessage('Please log out and log in again to update your profile information.');
+      } catch (error) {
+        console.error('Error refreshing user data:', error);
+      }
+    }
+  };
+
   const handleUpload = async (event) => {
     event.preventDefault();
     
@@ -539,7 +560,7 @@ const ManagePapers = () => {
       if (selectedPaper.isOwner) {
         setMessage('Paper updated successfully as main author!');
       } else if (selectedPaper.isCoAuthor) {
-        setMessage('Paper updated successfully as co-author!');
+        setMessage('Paper updated successfully as a co-author!');
       } else {
         setMessage('Paper updated successfully!');
       }

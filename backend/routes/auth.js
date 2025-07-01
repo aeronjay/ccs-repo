@@ -246,7 +246,16 @@ router.post('/login', async (req, res) => {
 
     res.status(200).json({
       message: 'Login successful',
-      user: { id: user._id, email: user.email, role: user.role, status: user.status }
+      user: { 
+        id: user._id, 
+        email: user.email, 
+        role: user.role, 
+        status: user.status,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        phoneNumber: user.phoneNumber,
+        department: user.department
+      }
     });
   } catch (error) {
     res.status(500).json({ message: 'Server error', error: error.message });
