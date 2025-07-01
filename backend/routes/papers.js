@@ -429,6 +429,27 @@ router.get('/admin/all', requireAdminOrModerator, async (req, res) => {
   }
 });
 
+// Get all users for co-author selection - MUST BE BEFORE /:paperId route
+router.get('/get-users-for-author-selection', async (req, res) => {
+  try {
+    console.log('Fetching users for co-author selection...');
+    
+    // Find users with approved status using Mongoose model
+    const users = await User.find(
+      { status: 'approved' },
+      '-password' // Exclude password using string syntax
+    ).lean(); // Use lean() for better performance and to return plain objects
+    
+    console.log(`Successfully retrieved ${users.length} users`);
+    
+    res.json(users);
+  } catch (error) {
+    console.error('Error in get-users-for-author-selection:', error);
+    console.error('Error stack:', error.stack);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+});
+
 // Get single paper details
 router.get('/:paperId', async (req, res) => {
   try {
@@ -774,14 +795,37 @@ router.get('/admin/stats', requireAdminOrModerator, async (req, res) => {
 // Get all users for co-author selection
 router.get('/get-users-for-author-selection', async (req, res) => {
   try {
-    // Find users with approved status
-    const users = await mongoose.connection.db.collection('users').find(
+    console.log('Fetching users for co-author selection...');
+    
+    // SIMPLE TEST - return hardcoded data first
+    res.json([
+      {
+        _id: "507f1f77bcf86cd799439011",
+        firstName: "Test",
+        lastName: "User",
+        email: "test@example.com",
+        department: "Computer Science",
+        status: "approved"
+      }
+    ]);
+    return;
+    
+    // Try to get a count first
+    const userCount = await User.countDocuments({ status: 'approved' });
+    console.log(`Found ${userCount} approved users in database`);
+    
+    // Find users with approved status using Mongoose model
+    const users = await User.find(
       { status: 'approved' },
-      { projection: { password: 0 } } // Exclude password
-    ).toArray();
+      '-password' // Exclude password using string syntax
+    ).lean(); // Use lean() for better performance and to return plain objects
+    
+    console.log(`Successfully retrieved ${users.length} users`);
     
     res.json(users);
   } catch (error) {
+    console.error('Error in get-users-for-author-selection:', error);
+    console.error('Error stack:', error.stack);
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 });

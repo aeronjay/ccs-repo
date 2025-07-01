@@ -99,8 +99,8 @@ const ManagePapers = () => {
   // Updated fetchUsers function to handle both _id and id fields
   const fetchUsers = async () => {
     try {
-      // We'll use the existing userService instead of paperService
-      const users = await userService.getAllUsers();
+      // Use the co-author specific endpoint that doesn't require admin privileges
+      const users = await userService.getAllUsersForCoAuthors();
       
       // Process users to ensure consistent ID field
       const processedUsers = users.map(user => ({
@@ -112,6 +112,9 @@ const ManagePapers = () => {
       setAllUsers(processedUsers);
     } catch (error) {
       console.error('Error fetching users:', error);
+      console.error('Full error details:', JSON.stringify(error, null, 2));
+      // Show the error message to help debug
+      setMessage(`Error fetching users: ${error.message || JSON.stringify(error)}`);
     }
   };
 

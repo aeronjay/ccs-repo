@@ -13,8 +13,14 @@ const api = axios.create({
 api.interceptors.request.use((config) => {
   const user = localStorage.getItem('user');
   if (user) {
-    const parsedUser = JSON.parse(user);
-    config.headers['user-role'] = parsedUser.role;
+    try {
+      const parsedUser = JSON.parse(user);
+      if (parsedUser.role) {
+        config.headers['user-role'] = parsedUser.role;
+      }
+    } catch (error) {
+      console.error('Error parsing user data for headers:', error);
+    }
   }
   return config;
 });
