@@ -117,20 +117,8 @@ const Homepage = () => {
     });
   };
   const getAvailableSDGs = () => {
-    const allSDGs = new Set();
-    papers.forEach(paper => {
-      if (paper.sdgs) {
-        paper.sdgs.forEach(sdg => {
-          const sdgName = typeof sdg === 'object' 
-            ? (sdg.name || sdg.id || 'Unknown SDG')
-            : sdg;
-          allSDGs.add(sdgName);
-        });
-      }
-    });
-    
-    // Add common SDGs even if not in papers yet
-    const commonSDGs = [
+    // Only use the standard 17 SDGs
+    const standardSDGs = [
       'SDG 1: No Poverty',
       'SDG 2: Zero Hunger',
       'SDG 3: Good Health and Well-being',
@@ -150,8 +138,14 @@ const Homepage = () => {
       'SDG 17: Partnerships to achieve the Goal'
     ];
     
-    commonSDGs.forEach(sdg => allSDGs.add(sdg));
-    return Array.from(allSDGs).sort();
+    return standardSDGs;
+  };
+
+  const clearSDGFilters = () => {
+    setFilters(prev => ({
+      ...prev,
+      sdgs: []
+    }));
   };
 
   const getAvailablePublishers = () => {
@@ -412,15 +406,23 @@ const Homepage = () => {
                     <div className="filter-dropdown">
                       <div className="filter-section">
                         <h4>Sustainable Development Goals (SDGs)</h4>
-                        <div className="sdg-filter-grid">
+                        {filters.sdgs.length > 0 && (
+                          <div className="sdg-selection-summary">
+                            {filters.sdgs.length} SDG{filters.sdgs.length > 1 ? 's' : ''} selected
+                            <button onClick={clearSDGFilters} className="sdg-clear-btn">
+                              Clear SDGs
+                            </button>
+                          </div>
+                        )}
+                        <div className="sdg-scrollable-container">
                           {getAvailableSDGs().map(sdg => (
-                            <label key={sdg} className="sdg-checkbox">
+                            <label key={sdg} className="sdg-checkbox-item">
                               <input
                                 type="checkbox"
                                 checked={filters.sdgs.includes(sdg)}
                                 onChange={() => handleSDGToggle(sdg)}
                               />
-                              <span>{sdg}</span>
+                              <span className="sdg-label">{sdg.replace('SDG ', '')}</span>
                             </label>
                           ))}
                         </div>

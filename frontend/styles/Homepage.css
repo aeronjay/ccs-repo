@@ -317,8 +317,8 @@
   border: 1px solid rgba(102, 51, 153, 0.15);
   border-radius: var(--border-radius);
   padding: 20px;
-  width: 400px;
-  max-height: 500px;
+  width: 450px;
+  max-height: 600px;
   overflow-y: auto;
   z-index: 1000;
   box-shadow: var(--shadow);
@@ -338,25 +338,74 @@
   padding-bottom: 8px;
 }
 
-.sdg-filter-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 8px;
+.sdg-scrollable-container {
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  background-color: #fafafa;
 }
 
-.sdg-checkbox {
+.sdg-checkbox-item {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  cursor: pointer;
-  padding: 4px;
+  gap: 8px;
+  padding: 6px 8px;
+  margin: 2px 0;
   border-radius: 4px;
+  cursor: pointer;
   transition: background-color 0.2s;
+  background-color: var(--white);
+  border: 1px solid transparent;
+  font-size: 12px;
 }
 
-.sdg-checkbox:hover {
-  background-color: #f3f4f6;
+.sdg-checkbox-item:hover {
+  background-color: var(--royal-velvet-bg);
+  border-color: var(--royal-velvet);
+}
+
+.sdg-checkbox-item input[type="checkbox"] {
+  margin: 0;
+  cursor: pointer;
+}
+
+.sdg-checkbox-item input[type="checkbox"]:checked + .sdg-label {
+  color: var(--royal-velvet);
+  font-weight: 500;
+}
+
+.sdg-label {
+  user-select: none;
+  cursor: pointer;
+}
+
+.sdg-selection-summary {
+  background-color: var(--royal-velvet-bg);
+  border: 1px solid var(--royal-velvet);
+  border-radius: 4px;
+  padding: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+  color: var(--royal-velvet);
+}
+
+.sdg-clear-btn {
+  background: none;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  padding: 4px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  cursor: pointer;
+  float: right;
+  transition: var(--transition);
+}
+
+.sdg-clear-btn:hover {
+  background-color: var(--danger);
+  color: var(--white);
 }
 
 .sdg-checkbox input[type="checkbox"] {
