@@ -204,7 +204,17 @@ const Homepage = () => {
       (paper.tags && paper.tags.some(tag => {
         const tagName = typeof tag === 'object' ? (tag.name || tag.id || '') : (tag || '');
         return tagName.toLowerCase().includes(searchQuery.toLowerCase());
-      }));
+      })) ||
+      (paper.abstract && (
+        typeof paper.abstract === 'object' ? 
+          (paper.abstract.text || paper.abstract.content || '').toLowerCase().includes(searchQuery.toLowerCase()) :
+          (paper.abstract || '').toLowerCase().includes(searchQuery.toLowerCase())
+      )) ||
+      (paper.description && (
+        typeof paper.description === 'object' ? 
+          (paper.description.text || paper.description.content || '').toLowerCase().includes(searchQuery.toLowerCase()) :
+          (paper.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+      ));
 
     if (!matchesSearch) return false;
 
@@ -362,7 +372,7 @@ const Homepage = () => {
               <div className="search-input-wrapper">
                 <input
                   type="text"
-                  placeholder="Search by title, authors, tags..."
+                  placeholder="Search by title, authors, tags, abstract..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="search-input"
