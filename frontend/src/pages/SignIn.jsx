@@ -98,7 +98,6 @@ const SignIn = () => {
               <span className="checkmark"></span>
               Remember me
             </label>
-            <a href="#" className="forgot-password">Forgot password?</a>
           </div>
 
           <button 
