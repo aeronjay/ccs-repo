@@ -68,28 +68,15 @@ const Register = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/send-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email: formData.email }),
+      const data = await authService.sendOTP(formData.email);
+      setEmailVerification({
+        ...emailVerification,
+        isEmailSent: true,
+        otpExpiry: data.expiresAt
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setEmailVerification({
-          ...emailVerification,
-          isEmailSent: true,
-          otpExpiry: data.expiresAt
-        });
-        alert('OTP sent to your email. Please check your inbox.');
-      } else {
-        setError(data.message || 'Failed to send OTP');
-      }
+      alert('OTP sent to your email. Please check your inbox.');
     } catch (error) {
-      setError('Failed to send OTP. Please try again.');
+      setError(error.message || 'Failed to send OTP. Please try again.');
     } finally {
       setOtpLoading(false);
     }
@@ -105,30 +92,14 @@ const Register = () => {
     setError('');
 
     try {
-      const response = await fetch('http://localhost:3000/api/auth/verify-otp', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ 
-          email: formData.email, 
-          otp: emailVerification.otp 
-        }),
+      const data = await authService.verifyOTP(formData.email, emailVerification.otp);
+      setEmailVerification({
+        ...emailVerification,
+        isVerified: true
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setEmailVerification({
-          ...emailVerification,
-          isVerified: true
-        });
-        alert('Email verified successfully!');
-      } else {
-        setError(data.message || 'Invalid OTP');
-      }
+      alert('Email verified successfully!');
     } catch (error) {
-      setError('Failed to verify OTP. Please try again.');
+      setError(error.message || 'Invalid OTP');
     } finally {
       setOtpLoading(false);
     }
