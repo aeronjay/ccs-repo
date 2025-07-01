@@ -771,6 +771,44 @@
   font-weight: 500;
 }
 
+/* Enhanced tooltip styles for SDG items */
+.sdg-item[title] {
+  position: relative;
+}
+
+.sdg-item[title]:hover::after {
+  content: attr(title);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 12px;
+  line-height: 1.4;
+  white-space: normal;
+  width: 280px;
+  text-align: left;
+  z-index: 1000;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  margin-bottom: 8px;
+  font-weight: normal;
+}
+
+.sdg-item[title]:hover::before {
+  content: '';
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #333;
+  z-index: 1000;
+  margin-bottom: 2px;
+}
+
 /* Form Actions */
 .form-actions {
   display: flex;

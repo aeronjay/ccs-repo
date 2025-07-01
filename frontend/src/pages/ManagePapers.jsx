@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { paperService, userService } from '../services/service';
+import { getSDGDescription } from '../utils/sdgUtils';
 import '../styles/ManagePapers.css';
 
 const ManagePapers = () => {
@@ -949,6 +950,7 @@ const ManagePapers = () => {
                           key={sdg.id}
                           className={`sdg-item ${selectedSDGs.includes(sdg.id) ? 'selected' : ''}`}
                           onClick={() => handleSDGChange(sdg.id)}
+                          title={getSDGDescription(sdg.id)}
                         >
                           <input
                             type="checkbox"
@@ -1390,6 +1392,7 @@ const ManagePapers = () => {
                           key={sdg.id}
                           className={`sdg-item ${selectedSDGs.includes(sdg.id) ? 'selected' : ''}`}
                           onClick={() => handleSDGChange(sdg.id)}
+                          title={getSDGDescription(sdg.id)}
                         >
                           <input
                             type="checkbox"

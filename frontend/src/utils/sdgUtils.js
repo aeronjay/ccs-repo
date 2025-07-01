@@ -19,9 +19,35 @@ export const SDG_MAPPING = {
   '17': 'SDG 17: Partnerships to achieve the Goal'
 };
 
+// SDG descriptions for tooltips
+export const SDG_DESCRIPTIONS = {
+  '1': 'End poverty in all its forms everywhere. This goal aims to eradicate extreme poverty and ensure economic security for all people.',
+  '2': 'End hunger, achieve food security and improved nutrition, and promote sustainable agriculture worldwide.',
+  '3': 'Ensure healthy lives and promote well-being for all at all ages, including universal health coverage and access to quality healthcare.',
+  '4': 'Ensure inclusive and equitable quality education and promote lifelong learning opportunities for all.',
+  '5': 'Achieve gender equality and empower all women and girls by eliminating discrimination and violence.',
+  '6': 'Ensure availability and sustainable management of water and sanitation for all people.',
+  '7': 'Ensure access to affordable, reliable, sustainable, and modern energy for all while promoting renewable energy sources.',
+  '8': 'Promote sustained, inclusive, and sustainable economic growth, full employment, and decent work for all.',
+  '9': 'Build resilient infrastructure, promote inclusive and sustainable industrialization, and foster innovation.',
+  '10': 'Reduce inequality within and among countries by promoting social, economic, and political inclusion.',
+  '11': 'Make cities and human settlements inclusive, safe, resilient, and sustainable through better urban planning.',
+  '12': 'Ensure sustainable consumption and production patterns to reduce environmental impact and promote resource efficiency.',
+  '13': 'Take urgent action to combat climate change and its impacts through mitigation and adaptation measures.',
+  '14': 'Conserve and sustainably use the oceans, seas, and marine resources for sustainable development.',
+  '15': 'Protect, restore, and promote sustainable use of terrestrial ecosystems and halt biodiversity loss.',
+  '16': 'Promote peaceful and inclusive societies, provide access to justice, and build effective institutions.',
+  '17': 'Strengthen the means of implementation and revitalize global partnerships for sustainable development.'
+};
+
 // Get all available SDGs in full format
 export const getAllSDGs = () => {
   return Object.values(SDG_MAPPING);
+};
+
+// Get SDG description for tooltip
+export const getSDGDescription = (sdgId) => {
+  return SDG_DESCRIPTIONS[String(sdgId)] || 'Description not available';
 };
 
 // Convert SDG number to full text
