@@ -1,4 +1,4 @@
-# FAMI Research Paper Repository
+# CCS Research Paper Repository
 
 A full-stack MERN (MongoDB, Express.js, React, Node.js) web application for managing, sharing, and reviewing academic research papers. This project is designed for academic institutions and research groups to streamline paper submission, review, and access, with a focus on user management, paper metadata, and sustainable development goals (SDGs).
 
